@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.1  
+**Version:** 1.2  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -20,7 +20,7 @@ It is not a roadmap, architecture replacement, or implementation specification. 
 
 ## 2. Current Phase
 
-**Phase:** Phase 1–3 Foundation — Controlled Transition to Schema Design
+**Phase:** Phase 1–3 Foundation — Controlled PostgreSQL Schema Design
 
 **Completed gates:**
 - ADIM 1 — Repository & Governance Audit: **GO**
@@ -28,29 +28,28 @@ It is not a roadmap, architecture replacement, or implementation specification. 
 - Identity Model v1.2 Constraint Matrix: **APPROVED FOR SCHEMA DESIGN**
 - Decision Recording Standard: **APPROVED**
 - Project Handoff: **APPROVED**
+- Zone Dictionary Schema v1.0: **APPROVED**
 
-**Current gate:** PostgreSQL Schema Design
+**Current gate:** PostgreSQL Schema Design / Controlled Re-Review
 
-**Next gate:** Schema Review and Human Project Owner Approval
+**Next gate:** Schema Review v1.1 — PASS/FAIL — followed by Human Project Owner Approval
 
-Production implementation and database migration remain blocked until schema review and approval are complete.
+Production implementation and database migration remain blocked until the complete schema passes controlled review and approval.
 
 ## 3. Repository State
 
 - Repository: `kelebek10/ai-studio-os`
-- Repository purpose: AI Studio OS / PAI-FORGE foundation
 - Active development branch: `phase-1-3-foundation`
 - Protected baseline branch: `main`
-- Latest governance synchronization commit: `governance: synchronize current state before schema design`
-- Foundation work and governance changes remain confined to the development branch.
-- Production directories on Oracle Cloud remain separate from this repository and must not be mixed with the PAI-FORGE source-of-truth repository.
-- `main` remains untouched by this governance synchronization.
+- Latest approved governance artifact: `governance/ZONE-DICTIONARY-SCHEMA-v1.0.md`
+- Latest known governance commit: `bfeb2c8ea0822386713dd73e5f9f4abb43abd6d5`
+- Foundation and governance changes remain confined to the development branch.
+- Production directories on Oracle Cloud remain separate from this repository.
+- `main` remains untouched by this governance work.
 
 ## 4. Governance Baseline
 
-The project governance baseline consists of the foundational governance documents plus the approved control documents created during the Phase 1–3 Foundation transition.
-
-Foundational controls include:
+Foundational controls:
 
 1. `PAI-FORGE-001-ARCHITECTURE-CONSTITUTION.md`
 2. `AI-GOVERNANCE.md`
@@ -60,48 +59,24 @@ Foundational controls include:
 6. `EVIDENCE-STANDARD.md`
 7. `RESEARCH-PROTOCOL.md`
 
-Current approved control documents include:
+Approved control documents:
 
 8. `DECISION-RECORDING-STANDARD.md`
 9. `PROJECT-HANDOFF.md`
 10. `IDENTITY-MODEL-v1.2-CONSTRAINT-MATRIX.md`
+11. `ZONE-DICTIONARY-SCHEMA-v1.0.md`
 
-These documents must not be recreated, silently replaced, or bypassed by later implementation work.
+PostgreSQL schema control artifacts:
 
-## 5. Current Repository Foundation
+12. `POSTGRESQL-SCHEMA-BLUEPRINT-v1.0.md` — superseded
+13. `POSTGRESQL-SCHEMA-BLUEPRINT-v1.1.md` — revised, awaiting re-review
+14. `POSTGRESQL-SCHEMA-REVIEW-v1.0.md` — revision-required review
+15. `POSTGRESQL-SCHEMA-REVIEW-CHECKLIST-v1.0.md` — controlled re-review checklist
+16. `POSTGRESQL-SCHEMA-REVISION-ORDER-v1.0.md` — approved dependency order
 
-The controlled foundation currently contains:
+No later implementation may bypass these records.
 
-```text
-core/
-evidence/
-research/
-tests/
-architecture/
-governance/
-```
-
-The intended controlled data/research flow is:
-
-```text
-External Source
-      ↓
-Research / Raw
-      ↓
-Screening
-      ↓
-Verification
-      ↓
-Approval
-      ↓
-Core
-```
-
-External information is not authoritative merely because it exists in a source, spreadsheet, model output, or research result.
-
-## 6. Architectural Baseline
-
-The governing architectural principle is:
+## 5. Architectural Baseline
 
 ```text
 Structured Data
@@ -117,31 +92,19 @@ Output Validation
 Human Approval
 ```
 
-Equivalent high-level principle:
+**Structured-first → Semantic-second → LLM-last.**
 
-> **Structured-first → Semantic-second → LLM-last**
+LLMs are not authoritative for botanical facts, environmental measurements, scientific evidence, or deterministic calculations.
 
-The LLM layer is not the authority for botanical facts, environmental measurements, scientific evidence, or deterministic calculations.
+## 6. Core Boundary
 
-## 7. Core Boundary
-
-The Core is the trusted project knowledge layer.
-
-Data may enter Core only after the required evidence, validation, verification, and approval gates have been satisfied.
-
-A source label such as `source`, a status such as `KNOWN`, or a model-generated answer does not by itself constitute scientific verification or Core approval.
-
-The long-term security principle for automation is:
+Core is the trusted project knowledge layer. Data enters Core only after required evidence, validation, verification and approval gates.
 
 > **n8n must not merely be configured not to write to Core; it must be technically unable to write to Core.**
 
-No automation may receive Core write credentials unless a corresponding security decision is explicitly approved.
+No automation receives Core write credentials without an explicit approved security decision.
 
-## 8. Data Ingestion Baseline
-
-The initial plant dataset is maintained externally in Google Sheets and is treated as source/candidate data, not authoritative Core data.
-
-The intended ingestion direction is:
+## 7. Data Ingestion Baseline
 
 ```text
 Google Sheets
@@ -161,120 +124,123 @@ Human approval
 Core
 ```
 
-### Binding principles
+RAW preserves the original payload and is never silently normalized, corrected or scientifically transformed. Technical validation and scientific verification remain separate. Idempotency does not depend solely on spreadsheet row number.
 
-- RAW must preserve the original source payload.
-- RAW must not be silently normalized, corrected, or scientifically transformed.
-- Technical validation and scientific verification are separate concerns.
-- Idempotency must not depend solely on spreadsheet row number.
-- RAW immutability, provenance, idempotency, and security controls will be represented explicitly in the PostgreSQL schema blueprint.
+## 8. Identity Model v1.2
 
-## 9. Identity Model v1.2 Status
+**APPROVED FOR SCHEMA DESIGN.**
 
-The Identity Model v1.2 Constraint Matrix is **APPROVED FOR SCHEMA DESIGN**.
-
-Its 34 constraints are the authoritative integrity contract for PostgreSQL schema design, including identity separation, event/version controls, immutability, evidence/knowledge separation, tenant isolation, AI proposal separation, provenance, canonicalization, and controlled state transitions.
+Its 34 constraints are the authoritative integrity contract covering identity separation, version/event controls, immutability, evidence/knowledge separation, tenant isolation, AI proposal separation, provenance, canonicalization and controlled state transitions.
 
 No PostgreSQL migration has been executed.
 
-## 10. AI Team Baseline
+## 9. Zone Dictionary Status
 
-The project may use:
+`ZONE-DICTIONARY-SCHEMA-v1.0.md` is **APPROVED** as a design artifact.
 
-- ChatGPT
-- Claude
-- Gemini
-- Kimi
+Approved controls include immutable identity/current-state separation, explicit parent relationships, separate scientific fallback semantics, controlled microclimate criteria, immutable approval history, typed approval targets, `expected_version`, `event_sequence`, `idempotency_key`, versioned microclimate profiles, normalized `record_zone`, and role boundaries.
 
-The models are replaceable components, not the permanent system authority.
+This approval does **not** authorize production migration or physical deployment.
 
-No AI model may independently redefine Core truth or bypass governance controls.
+The approved Zone Model and Zone Scope Data Contract must also exist as durable governance records before the schema documentation is considered complete.
 
-## 11. Current Known Constraints
+## 10. PostgreSQL Schema Status
 
-1. PostgreSQL schema design has not yet been implemented.
-2. Production database migration has not been executed and is blocked.
-3. RAW storage/security topology remains a design concern to be encoded in the schema and later infrastructure controls.
-4. n8n workflow contracts and credential boundaries must remain subordinate to approved governance decisions.
-5. Evidence/provenance records require concrete schema and lifecycle definitions.
-6. Google Sheets remains an external candidate-data source.
-7. Scientific verification remains separate from technical ingestion.
-8. Production infrastructure remains isolated from the development repository until explicit integration decisions are approved.
+Current blueprint: `POSTGRESQL-SCHEMA-BLUEPRINT-v1.1.md`.
+
+It incorporates the 11 prior review findings plus hardening for idempotency, concurrency, immutability, provenance, RLS, canonicalization, deletion semantics and controlled Core transitions.
+
+**Status: NOT YET APPROVED.** It remains a design artifact pending controlled re-review.
+
+Review sequence:
+
+```text
+Core Write Authority
+        ↓
+Tenant RLS + FK/Delete
+        ↓
+Immutability
+        ↓
+Event Sequence
+        ↓
+Idempotency
+        ↓
+Required Fields + Relationship Types
+        ↓
+Canonicalization
+        ↓
+Proposal → Approval Integrity
+        ↓
+Index / Query Hardening
+        ↓
+PASS — ALL CONTROLS
+        ↓
+Human Project Owner Approval
+```
+
+No SQL migration is authorized before the complete sequence passes.
+
+## 11. Open Gates / Critical Completeness Checks
+
+1. PostgreSQL schema is design-only; no physical implementation.
+2. Blueprint v1.1 requires controlled re-review.
+3. `knowledge_record` must be reconciled with Identity Model, Zone Model and Zone Scope Data Contract.
+4. `record_zone.record_id` must reference the authoritative Knowledge record.
+5. Scope/cardinality rules must be transactionally enforced across Knowledge and `record_zone`.
+6. Approved Zone Model and Zone Scope Data Contract require durable GitHub synchronization.
+7. Production migration is blocked.
+8. RAW storage/security topology still requires concrete infrastructure controls later.
+9. n8n credentials/workflow contracts remain subordinate to governance.
+10. Evidence/provenance lifecycle requires concrete schema definitions.
+11. Google Sheets remains candidate/source data only.
+12. Scientific verification remains separate from technical ingestion.
+13. Production infrastructure remains isolated until explicit integration approval.
 
 ## 12. Known Architecture Drift
 
-`architecture/REPOSITORY-STRUCTURE.md` describes a broader future repository structure that includes areas such as `agents/`, `applications/`, `infrastructure/`, and `docs/`.
-
-The current controlled foundation intentionally does not create all of these areas yet.
-
-This remains **planned expansion / architecture drift requiring controlled reconciliation**, not a current blocker.
-
-Future structure expansion must be justified by an approved phase requirement rather than created speculatively.
+`architecture/REPOSITORY-STRUCTURE.md` describes future areas such as `agents/`, `applications/`, `infrastructure/` and `docs/`. These are planned expansion, not current implementation requirements. They must not be created speculatively.
 
 ## 13. Completed Work
 
-The following work has been completed and checked:
-
-- Repository identity verified.
-- Foundational governance baseline verified.
-- Foundation directory structure created.
-- Foundation checkpoint committed.
-- Development branch established: `phase-1-3-foundation`.
-- `main` branch left untouched by foundation and governance work.
-- Initial architecture audit completed.
-- ADIM 1 classified as **GO**.
-- Decision Recording Standard established and **APPROVED**.
-- Identity Model v1.2 Constraint Matrix established and **APPROVED FOR SCHEMA DESIGN**.
-- Project Handoff established and **APPROVED**.
-- CURRENT-STATE synchronized to the new governance checkpoint.
+- Repository identity and foundational governance verified.
+- Foundation checkpoint and `phase-1-3-foundation` established.
+- `main` left untouched.
+- ADIM 1 GO.
+- Decision Recording Standard APPROVED.
+- Identity Model v1.2 APPROVED FOR SCHEMA DESIGN.
+- Project Handoff APPROVED.
+- PostgreSQL Blueprint v1.0 reviewed and rejected for revision.
+- Blueprint v1.1 created and hardened.
+- Schema Review Checklist established.
+- Schema Revision Order established.
+- Zone Dictionary Schema v1.0 reviewed, hardened and APPROVED.
+- Current state reconciled to the latest governance checkpoint.
 
 ## 14. Immediate Next Actions
 
-The controlled next sequence is:
-
-1. Create `POSTGRESQL-SCHEMA-BLUEPRINT-v1.0`.
-2. Map all Identity Model v1.2 constraints C-01 through C-34 to concrete PostgreSQL enforcement.
-3. Define tables, relationships, keys, constraints, indexes, roles, permissions, RLS boundaries, immutable-history mechanisms, and state-transition controls.
-4. Review the blueprint against the governance and Identity Model contracts.
-5. Record the schema decision and obtain Human Project Owner approval.
-6. Only after approval, design and execute a separate migration plan.
+1. Synchronize approved Zone Model and Zone Scope Data Contract into GitHub.
+2. Design `knowledge_record` against Identity + Zone + Scope contracts.
+3. Finalize `record_zone` FK and cross-table scope/cardinality enforcement.
+4. Re-review Blueprint v1.1 against all 34 Identity controls, Zone controls and hardening checks.
+5. Record Schema Review v1.1 as **PASS — ALL CONTROLS** only if objectively enforceable.
+6. Obtain Human Project Owner approval.
+7. Design a separate PostgreSQL migration plan only after approval.
+8. Perform migration security/reversibility review before production execution.
 
 ## 15. Current Gate
 
-### POSTGRESQL SCHEMA DESIGN
+### POSTGRESQL SCHEMA DESIGN / CONTROLLED RE-REVIEW
 
 **Status:** IN PROGRESS — DESIGN ONLY
 
-**GO condition:**
+**GO condition:** Current state synchronized; Identity approved; Zone Dictionary approved; governance controls approved; Blueprint v1.1 exists; no uncontrolled production implementation.
 
-- Current state synchronized.
-- Identity Model v1.2 approved for schema design.
-- Decision Recording Standard approved.
-- Project Handoff approved.
-- No uncontrolled production implementation introduced.
-
-**STOP condition:**
-
-- Any attempt to write unverified source data directly into Core.
-- Any automation with unauthorized Core write credentials.
-- Any destructive mutation of RAW without an approved control model.
-- Any production migration before schema review and approval.
-- Any architecture change that bypasses decision/version control.
+**STOP condition:** unverified source→Core write; unauthorized automation Core credentials; destructive RAW mutation; migration before approval; bypassed decision/version control; or unresolved contradiction between Identity, Zone, Knowledge, Evidence, Provenance and Tenant contracts.
 
 ## 16. Change Control
 
-This document must be updated whenever a material project-state change occurs, including:
-
-- phase transition,
-- architecture decision,
-- repository structure change,
-- security boundary change,
-- data lifecycle change,
-- production deployment milestone,
-- major AI orchestration change.
-
-Material changes must be traceable through Git history and, where appropriate, a corresponding decision record.
+Update this document for every material phase, architecture, repository, security, data lifecycle, production, or AI-orchestration change. Material changes must be traceable through Git history and, where appropriate, a decision record.
 
 ---
 
-**Source of Truth Rule:** The repository and its versioned governance/decision records are the durable project control layer. Conversational context may assist execution but must not be treated as the sole authoritative project record.
+**Source of Truth Rule:** The repository and versioned governance/decision records are the durable project control layer. Conversational context may assist execution but is not the sole authoritative project record.
