@@ -7,428 +7,372 @@
 **Scope:** P0 + P1 Identity/Core/Provenance controls  
 **Branch:** `phase-1-3-foundation`
 
-## 1. Purpose and Gate
+## 1. Gate
 
-This revision translates C-01–C-34 into enforceable PostgreSQL design requirements. It supersedes v1.0 for review purposes while preserving v1.0 as historical review material.
+This is a design artifact only. No production migration, SQL execution, data import, or infrastructure mutation is authorized.
 
-**This is a design artifact only. No production migration, data import, infrastructure mutation, or SQL execution is authorized.**
+The blueprint is not APPROVED until the controlled schema review records **PASS — ALL CONTROLS**.
 
-The blueprint cannot be marked APPROVED until the controlled review checklist records PASS — ALL CONTROLS.
+## 2. PostgreSQL Domains / Controlled Values
 
-## 2. Logical Schemas
+Use PostgreSQL `ENUM` or named `CHECK` constraints for all controlled states. Minimum controlled domains:
 
-- `core` — authoritative scientific identity, knowledge, relationships, approvals and controlled history.
-- `evidence` — immutable evidence and provenance records plus evidence↔knowledge links.
-- `research` — candidate/raw intake and AI/research proposals; never authoritative Core.
-- `tenant` — tenant-scoped overrides and operational data.
-- `audit` — append-only security/operational audit events.
+- `entity_type text CHECK (...)`
+- `entity.status text CHECK (...)`
+- `knowledge_type text CHECK (...)`
+- `knowledge.state text CHECK (...)`
+- `relationship_type text CHECK (...)`
+- `approval_type text CHECK (...)`
+- `proposal.status text CHECK (...)`
+- `evidence.status text CHECK (...)`
+- `event_type text CHECK (...)`
+- `tenant.status text CHECK (...)`
+- `tenant_override.status text CHECK (...)`
 
-Schema separation is a security boundary, not merely naming.
+The exact allowed values must be frozen in the migration review. Application-only validation is not authoritative.
 
-## 3. Controlled Vocabularies
+## 3. `core.entity`
 
-Controlled values must be enforced with PostgreSQL `ENUM` or named `CHECK` constraints. Free-form application validation is insufficient.
+Permanent scientific identity.
 
-Minimum controlled domains:
-
-- `entity.status`
-- `knowledge.state`
-- `relationship_type`
-- `approval` outcome/type where applicable
-- `proposal.status`
-- `evidence.status`
-- tenant override status
-- event type
-
-The exact vocabulary values must be frozen during schema review before migration design. Adding a value is a versioned schema change; changing semantic meaning of an existing value is prohibited.
-
-## 4. Core Entity
-
-### `core.entity`
-
-Purpose: permanent scientific identity.
-
-Required fields:
-
-- `entity_id uuid PRIMARY KEY`
-- `entity_type ... NOT NULL`
-- `scientific_identity_key ... NOT NULL UNIQUE`
-- `canonical_name text NOT NULL`
-- `created_at timestamptz NOT NULL`
-- `created_by ... NOT NULL`
-- `version bigint NOT NULL DEFAULT 1 CHECK (version > 0)`
-- `status ... NOT NULL`
+```text
+entity_id               uuid PRIMARY KEY
+entity_type             text NOT NULL
+scientific_identity_key text NOT NULL UNIQUE
+canonical_name          text NOT NULL
+created_at              timestamptz NOT NULL
+created_by              uuid NOT NULL
+version                 bigint NOT NULL DEFAULT 1 CHECK (version > 0)
+status                  text NOT NULL CHECK (...)
+```
 
 Rules:
 
-- `entity_id` is permanent and never reused.
-- No operational role has DELETE privilege.
-- Physical deletion is prohibited by the Core security boundary.
-- Business keys are separate from scientific identity.
-- Merge is represented by governed relationship/event records; the historical entity survives.
+- `entity_id` is never physically deleted or reused.
+- Business keys are not identity keys.
+- Operational roles have no DELETE privilege.
+- Merge preserves the historical entity.
 - Split does not automatically migrate knowledge.
 
-## 5. Core Relationships
+## 4. `core.entity_relationship`
 
-### `core.entity_relationship`
+```text
+relationship_id   uuid PRIMARY KEY
+from_entity_id    uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT
+to_entity_id      uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT
+relationship_type text NOT NULL CHECK (...)
+created_at        timestamptz NOT NULL
+created_by        uuid NOT NULL
+```
 
-Required fields:
+Required constraint:
 
-- `relationship_id uuid PRIMARY KEY`
-- `from_entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT`
-- `to_entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT`
-- `relationship_type ... NOT NULL`
-- `created_at timestamptz NOT NULL`
-- immutable actor/provenance fields NOT NULL where applicable
+`UNIQUE (from_entity_id, to_entity_id, relationship_type)`.
 
-Constraint:
+## 5. `core.knowledge`
 
-`UNIQUE(from_entity_id, to_entity_id, relationship_type)`.
+```text
+knowledge_id    uuid PRIMARY KEY
+entity_id       uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT
+knowledge_type  text NOT NULL CHECK (...)
+state           text NOT NULL CHECK (...)
+payload         jsonb NOT NULL
+ruleset_version text NOT NULL
+created_at      timestamptz NOT NULL
+updated_at      timestamptz NOT NULL
+version         bigint NOT NULL DEFAULT 1 CHECK (version > 0)
+```
 
-Relationship types are DB-controlled. Invalid values are rejected at the database boundary.
+`state` is authoritative. `is_current`, if present, is an optimization only and never defines truth. Evidence invalidation never automatically destructively mutates knowledge.
 
-## 6. Core Knowledge
+## 6. `core.event_history`
 
-### `core.knowledge`
+```text
+event_id         uuid PRIMARY KEY
+entity_id        uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT
+event_sequence   bigint NOT NULL CHECK (event_sequence > 0)
+event_type       text NOT NULL CHECK (...)
+aggregate_version bigint NOT NULL CHECK (aggregate_version > 0)
+actor_id         uuid NOT NULL
+actor_role       text NOT NULL
+model_id         text NULL
+model_version    text NULL
+ruleset_version  text NULL
+payload          jsonb NOT NULL
+created_at       timestamptz NOT NULL
+```
 
-Required fields:
+Required:
 
-- `knowledge_id uuid PRIMARY KEY`
-- `entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT`
-- `knowledge_type ... NOT NULL`
-- `state ... NOT NULL`
-- `payload jsonb NOT NULL`
-- `ruleset_version text NOT NULL`
-- `created_at timestamptz NOT NULL`
-- `updated_at timestamptz NOT NULL`
-- `version bigint NOT NULL DEFAULT 1 CHECK (version > 0)`
+`UNIQUE (entity_id, event_sequence)`.
 
-`state` is authoritative and DB-controlled. `is_current`, if retained for query optimization, is explicitly non-authoritative and cannot define truth independently of state/history.
+`event_sequence` is the ordered history number within the entity aggregate. Allocation must be transaction-safe; `MAX()+1` and timestamp ordering are prohibited.
 
-Knowledge is never destructively invalidated merely because evidence becomes invalid.
+## 7. `core.approval`
 
-## 7. Approval / State Transition
+```text
+approval_id       uuid PRIMARY KEY
+proposal_id       uuid NULL REFERENCES research.proposal(proposal_id) ON DELETE RESTRICT
+knowledge_id      uuid NOT NULL REFERENCES core.knowledge(knowledge_id) ON DELETE RESTRICT
+actor_id          uuid NOT NULL
+actor_role        text NOT NULL
+workflow_type     text NOT NULL
+expected_version  bigint NOT NULL CHECK (expected_version > 0)
+event_sequence   bigint NOT NULL CHECK (event_sequence > 0)
+idempotency_key   text NOT NULL
+approval_type     text NOT NULL CHECK (...)
+approved_at       timestamptz NOT NULL
+```
 
-### `core.approval`
+Required idempotency constraint:
 
-Append-only approval record.
+`UNIQUE (workflow_type, actor_id, idempotency_key)`.
 
-Required fields:
+If a future workflow requires a different scope, it must define a separate approved uniqueness domain rather than silently reusing this one.
 
-- `approval_id uuid PRIMARY KEY`
-- `proposal_id uuid NULL REFERENCES research.proposal(proposal_id) ON DELETE RESTRICT`
-- `knowledge_id uuid NOT NULL REFERENCES core.knowledge(knowledge_id) ON DELETE RESTRICT`
-- `actor_id ... NOT NULL`
-- actor-role snapshot `... NOT NULL`
-- `expected_version bigint NOT NULL`
-- `event_sequence bigint NOT NULL`
-- `idempotency_key text NOT NULL`
-- approval outcome/type `... NOT NULL`
-- `approved_at timestamptz NOT NULL`
+Approval is append-only. `pai_approval_writer` receives INSERT only and cannot UPDATE/DELETE approval rows or write event history.
 
-Approval is append-only. The approval writer may INSERT approval records but cannot UPDATE/DELETE approval rows or write event history through that role.
-
-Approval does not itself grant unrestricted table mutation. Core state transition occurs only through the controlled Core transition mechanism defined in Section 12.
-
-## 8. Event History
-
-### `core.event_history`
-
-Required fields:
-
-- `event_id uuid PRIMARY KEY`
-- `entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT`
-- `event_sequence bigint NOT NULL CHECK (event_sequence > 0)`
-- `event_type ... NOT NULL`
-- `aggregate_version bigint NOT NULL CHECK (aggregate_version > 0)`
-- actor provenance `... NOT NULL`
-- model provenance where applicable `... NULL`
-- `ruleset_version text NULL`
-- `payload jsonb NOT NULL`
-- `created_at timestamptz NOT NULL`
-
-`event_sequence` is scoped to the governed aggregate/history stream. The schema must enforce uniqueness at that scope, e.g. `UNIQUE(entity_id, event_sequence)` where entity is the aggregate boundary.
-
-Allocation must be transaction-safe. Sequence allocation must not depend on application-generated timestamps or race-prone MAX()+1 logic.
-
-`expected_version`, `event_sequence`, and `idempotency_key` are independent controls.
-
-## 9. Evidence
+## 8. Evidence
 
 ### `evidence.record`
 
-Required fields:
+```text
+evidence_id       uuid PRIMARY KEY
+source_system     text NOT NULL
+source_record_key text NOT NULL
+source_version    text NOT NULL
+content_hash      text NOT NULL
+captured_at       timestamptz NOT NULL
+verification_state text NOT NULL CHECK (...)
+status            text NOT NULL CHECK (...)
+actor_id          uuid NOT NULL
+created_at        timestamptz NOT NULL
+```
 
-- `evidence_id uuid PRIMARY KEY`
-- source identifier `... NOT NULL`
-- source version `... NOT NULL`
-- content hash `... NOT NULL`
-- captured_at timestamptz NOT NULL
-- verification metadata `... NOT NULL`
-- status `... NOT NULL`
-- actor/provenance `... NOT NULL`
+Operational evidence writer: INSERT only. UPDATE/DELETE/TRUNCATE denied.
 
-Operational evidence writers are INSERT-only. UPDATE, DELETE and TRUNCATE are denied. New source revisions create new evidence records.
-
-Append-only enforcement must not rely solely on application behavior; ownership/privilege separation and, where required, database trigger/function protections must prevent bypass by operational roles.
+Source revision creates a new record. Append-only protection must be enforced by ownership/privilege separation; application convention alone is insufficient.
 
 ### `evidence.knowledge_link`
 
-- `evidence_id uuid NOT NULL REFERENCES evidence.record(evidence_id) ON DELETE RESTRICT`
-- `knowledge_id uuid NOT NULL REFERENCES core.knowledge(knowledge_id) ON DELETE RESTRICT`
-- `link_type ... NOT NULL`
-- `created_at timestamptz NOT NULL`
+```text
+evidence_id uuid NOT NULL REFERENCES evidence.record(evidence_id) ON DELETE RESTRICT
+knowledge_id uuid NOT NULL REFERENCES core.knowledge(knowledge_id) ON DELETE RESTRICT
+link_type text NOT NULL CHECK (...)
+created_at timestamptz NOT NULL
+PRIMARY KEY (evidence_id, knowledge_id)
+```
 
-Primary key: `(evidence_id, knowledge_id)`.
+## 9. `research.raw_record`
 
-Evidence invalidation never performs destructive knowledge mutation.
+```text
+raw_id             uuid PRIMARY KEY
+source_system      text NOT NULL
+source_record_key  text NOT NULL
+payload            jsonb NOT NULL
+payload_hash       text NOT NULL
+captured_at        timestamptz NOT NULL
+actor_id           uuid NOT NULL
+idempotency_key    text NOT NULL
+```
 
-## 10. Research / RAW / Proposal
+RAW writer is INSERT only. UPDATE/DELETE/TRUNCATE denied. No RAW role has any Core write privilege.
 
-### `research.raw_record`
+## 10. `research.proposal`
 
-Required fields:
+```text
+proposal_id        uuid PRIMARY KEY
+proposal_fingerprint text NOT NULL UNIQUE
+proposed_entity_id uuid NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT
+proposed_knowledge_id uuid NULL REFERENCES core.knowledge(knowledge_id) ON DELETE RESTRICT
+model_id           text NOT NULL
+model_version      text NOT NULL
+ruleset_version    text NOT NULL
+actor_id           uuid NOT NULL
+status             text NOT NULL CHECK (...)
+created_at         timestamptz NOT NULL
+```
 
-- `raw_id uuid PRIMARY KEY`
-- `source_system text NOT NULL`
-- `source_record_key text NOT NULL`
-- `payload jsonb NOT NULL`
-- `payload_hash text NOT NULL`
-- `captured_at timestamptz NOT NULL`
-- ingestion provenance `... NOT NULL`
-- `idempotency_key text NOT NULL`
+Proposal status is never Core state. Proposal rows cannot directly mutate Core.
 
-RAW is immutable. The RAW writer is INSERT-only. UPDATE/DELETE/TRUNCATE are denied. RAW has no privilege path to Core.
-
-### `research.proposal`
-
-Required fields:
-
-- `proposal_id uuid PRIMARY KEY`
-- `proposal_fingerprint text NOT NULL UNIQUE`
-- proposed entity/knowledge references where applicable
-- `model_id text NOT NULL`
-- `model_version text NOT NULL`
-- `ruleset_version text NOT NULL`
-- actor/provenance `... NOT NULL`
-- `status ... NOT NULL`
-- `created_at timestamptz NOT NULL`
-
-Proposal status is not Core state. A proposal cannot mutate Core through status changes. Approval requires an explicit controlled transition and traceable approval record.
-
-## 11. Tenant Isolation / RLS
+## 11. Tenant / RLS
 
 ### `tenant.tenant`
 
-- `tenant_id uuid PRIMARY KEY`
-- metadata `... NOT NULL`
-- status `... NOT NULL`
+```text
+tenant_id  uuid PRIMARY KEY
+name       text NOT NULL
+status     text NOT NULL CHECK (...)
+created_at timestamptz NOT NULL
+```
 
 ### `tenant.entity_override`
 
-- `tenant_id uuid NOT NULL REFERENCES tenant.tenant(tenant_id) ON DELETE RESTRICT`
-- `entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT`
-- override payload `jsonb NOT NULL`
-- version/history fields `... NOT NULL`
+```text
+tenant_id uuid NOT NULL REFERENCES tenant.tenant(tenant_id) ON DELETE RESTRICT
+entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT
+payload   jsonb NOT NULL
+version   bigint NOT NULL CHECK (version > 0)
+status    text NOT NULL CHECK (...)
+created_at timestamptz NOT NULL
+updated_at timestamptz NOT NULL
+PRIMARY KEY (tenant_id, entity_id)
+```
 
-Primary key: `(tenant_id, entity_id)`.
-
-Every tenant-scoped table has a non-null `tenant_id` and a tenant FK unless the table is itself the tenant registry.
+Every tenant-scoped table has `tenant_id NOT NULL` and tenant FK unless it is the tenant registry.
 
 RLS requirements:
 
-1. `ENABLE ROW LEVEL SECURITY` on every tenant-scoped table.
-2. `FORCE ROW LEVEL SECURITY` so table ownership does not silently bypass tenant policy for application paths.
-3. Explicit SELECT/INSERT/UPDATE/DELETE policies using a transaction-local authenticated tenant context.
-4. INSERT/UPDATE policies must require `tenant_id` to equal the authenticated tenant context.
-5. Tenant application roles cannot set arbitrary tenant context through an untrusted client value.
-6. Cross-tenant foreign-key combinations are prohibited by design.
-7. Global `core.entity` has no tenant ownership column and cannot be mutated through tenant roles.
-8. Tenant overrides are the only tenant-specific customization path unless separately approved.
+1. `ENABLE ROW LEVEL SECURITY`.
+2. `FORCE ROW LEVEL SECURITY`.
+3. Explicit SELECT/INSERT/UPDATE/DELETE policies.
+4. Policies compare row `tenant_id` to a transaction-local authenticated tenant context.
+5. INSERT/UPDATE cannot choose another tenant.
+6. Tenant application roles cannot set arbitrary tenant context.
+7. Tenant roles cannot mutate `core.entity`.
+8. Tenant override is separate from global scientific identity.
 
-RLS is a defense boundary, not the only authorization mechanism; role privileges remain restrictive.
+RLS is combined with restrictive role privileges; it is not the sole security boundary.
 
 ## 12. Core Write Authority
 
-Core mutation is a controlled workflow boundary.
+Roles:
 
-Required security model:
+- `pai_owner`: human-controlled administrative authority.
+- `pai_core_service`: only role allowed to execute controlled Core transition functions.
+- `pai_core_read`: read-only Core access.
+- `pai_approval_writer`: approval INSERT only.
+- `pai_evidence_writer`: evidence INSERT only.
+- `pai_raw_writer`: RAW INSERT only.
+- `pai_research_writer`: research/proposal writes; no Core mutation.
+- `pai_tenant_app`: tenant-scoped access through RLS.
+- `pai_n8n`: transport/intake only; no Core mutation.
 
-- `pai_core_read`: SELECT only on approved Core views/tables.
-- `pai_n8n`: no Core INSERT/UPDATE/DELETE/TRUNCATE privileges.
-- AI/research roles: no authoritative Core mutation privileges.
-- operational application roles: no unrestricted Core mutation privileges.
-- `pai_core_service`: only role permitted to execute controlled Core transition functions/workflows.
-- direct table mutation by application roles is denied even when a function exists.
-- controlled functions use explicit transaction/concurrency checks and `SECURITY DEFINER` only where required, with fixed `search_path`, owner isolation, and narrowly scoped EXECUTE privileges.
+Operational roles receive no direct Core INSERT/UPDATE/DELETE/TRUNCATE privilege.
 
-The intended production pattern is:
+Controlled Core transition function requirements:
 
-`Proposal / approved request → controlled service function → expected_version check → state transition + event + approval linkage → commit`
+- fixed `search_path`;
+- narrowly scoped `EXECUTE` grants;
+- explicit `expected_version` check;
+- atomic state + event + approval linkage transaction;
+- no client-controlled bypass;
+- `SECURITY DEFINER` only where required, owned by a dedicated non-login owner.
 
-No client may independently update `core.knowledge.state` and then claim approval.
+Target flow:
+
+`proposal/request → controlled service function → expected_version validation → Core state transition → event append → approval linkage → commit`.
 
 ## 13. Immutability / Provenance
 
-The following are append-only after insertion:
+Append-only after insertion:
 
-- approval actor and actor-role snapshot
-- evidence source/version/hash/capture metadata
-- RAW payload/hash/source metadata
-- event actor/model/ruleset provenance
-- proposal model/version/ruleset provenance
+- approval actor, role, workflow, expected version, idempotency key;
+- evidence source/version/hash/verification metadata;
+- RAW payload/hash/source metadata;
+- event actor/model/ruleset provenance;
+- proposal model/version/ruleset provenance.
 
-Operational writer roles cannot UPDATE or DELETE these records.
+Operational writers cannot UPDATE/DELETE these records. Dedicated non-login ownership prevents owner privilege leakage into application roles.
 
-Where ownership would otherwise permit bypass, tables must be owned by a dedicated non-login owner role and operational writers must not inherit owner or superuser-equivalent capabilities.
+## 14. Concurrency Controls
 
-## 14. Concurrency and Idempotency
+The mechanisms are distinct:
 
-### Expected version — C-01/C-04
+- `expected_version`: optimistic concurrency expectation.
+- `event_sequence`: ordered history identity within an aggregate.
+- `idempotency_key`: retry/duplicate-operation identity within a declared workflow scope.
 
-`expected_version` is the caller's optimistic concurrency expectation. A controlled transition succeeds only if the stored version equals the expected version; otherwise it fails without partial state mutation.
+A controlled state transition must atomically verify `stored_version = expected_version` and increment the authoritative version. Failed concurrency checks produce no partial Core mutation.
 
-### Event sequence — C-02
+## 15. Referential Integrity / Deletion
 
-`event_sequence` is the ordered history identifier inside the declared aggregate scope. Uniqueness is DB-enforced. Allocation is transaction-safe.
+Every FK explicitly declares `ON DELETE`.
 
-### Idempotency key — C-03
+Baseline: historical/global identity references use `RESTRICT`. No cascade may delete scientific identity, evidence, approvals or history. Tenant deletion cannot cascade into global identity.
 
-`idempotency_key` identifies a retryable operation in an explicit workflow scope. The uniqueness domain must include the operation scope, for example `(workflow_type, actor_id, idempotency_key)` where appropriate. A single global key column without a defined scope is insufficient.
+Any future `CASCADE` requires a separate approved decision.
 
-These three mechanisms must never be substituted for one another.
+## 16. Canonicalization
 
-## 15. Referential Integrity / ON DELETE
+Persist:
 
-Every FK must specify explicit deletion semantics.
+```text
+canonicalization_ruleset_version text NOT NULL
+canonical_key                    text NOT NULL
+input_fingerprint                text NOT NULL
+collision_state                  text NOT NULL CHECK (...)
+```
 
-Baseline policy:
+Canonicalization is deterministic for identical normalized input + ruleset version.
 
-- global scientific identity references → `ON DELETE RESTRICT`
-- historical evidence/event/approval references → `ON DELETE RESTRICT`
-- tenant → tenant override → `ON DELETE RESTRICT`
-- no tenant operation may cascade into `core.entity`
-- no historical record may be deleted through a parent cascade
+Collision state is reviewable and cannot trigger automatic entity merge. A new ruleset cannot silently redefine an existing scientific identity.
 
-Any future CASCADE requires a separately approved schema decision proving that history and scientific identity are unaffected.
+## 17. Proposal → Approval Integrity
 
-## 16. Required NOT NULL Contract
+- Proposal fingerprint is unique.
+- Approval references the originating proposal when applicable.
+- Approval references the target Core knowledge/version.
+- Approval is append-only.
+- Proposal status cannot update Core.
+- Core transition verifies `expected_version`.
+- Model/version/actor provenance is immutable.
+- Approval does not grant Core table privileges.
 
-Mandatory identity, relationship, state, provenance, hash, version, timestamp and FK fields are explicitly `NOT NULL` in their table definitions. Nullable fields are permitted only where absence has a defined semantic meaning.
+## 18. Index Baseline
 
-A migration review must reject any table definition that relies on “required fields” prose without an actual `NOT NULL`, `CHECK`, FK, UNIQUE or equivalent DB constraint.
+Indexes must support real constraints/access paths:
 
-## 17. Canonicalization
+- scientific identity and canonical lookup;
+- relationship uniqueness/directional lookup;
+- knowledge `(entity_id, knowledge_type, state)`;
+- approval idempotency scope and expected-version lookup;
+- event `(entity_id, event_sequence)`;
+- evidence hash/source-version lookup;
+- evidence↔knowledge bridge;
+- proposal fingerprint;
+- tenant FK/RLS predicates;
+- RAW source identity/hash.
 
-Canonicalization persists:
+No speculative index is required.
 
-- `canonicalization_ruleset_version text NOT NULL`
-- deterministic `canonical_key text NOT NULL`
-- normalized-input `input_fingerprint text NOT NULL`
-- review/collision state `... NOT NULL`
+## 19. C-01–C-34 Coverage
 
-The deterministic identity candidate is derived from normalized input + ruleset version. Repeating the same input under the same ruleset yields the same candidate key.
-
-A collision is a reviewable condition. It cannot automatically merge entities.
-
-Canonicalization must not redefine an existing scientific identity merely because a later ruleset produces a different candidate.
-
-## 18. Proposal → Approval Integrity
-
-The proposal layer remains non-authoritative.
-
-Required integrity:
-
-- `research.proposal.proposal_id` is the traceable origin of an approval where a proposal exists.
-- proposal fingerprint is unique.
-- approval records are append-only.
-- approval references the target Core knowledge/version.
-- controlled transition verifies `expected_version`.
-- proposal status cannot directly update Core.
-- AI model/version and actor provenance remain immutable.
-- no approval row alone grants a client direct Core table privileges.
-
-## 19. Index Baseline
-
-Indexes must support actual constraints and expected access paths.
-
-Required baseline:
-
-- entity scientific identity and canonical lookup
-- relationship uniqueness and directional lookup
-- knowledge `(entity_id, knowledge_type, state)`
-- approval idempotency scope and `(knowledge_id, expected_version)` where query patterns justify it
-- event `(entity_id, event_sequence)`
-- evidence content hash and source/version lookup
-- evidence↔knowledge bridge keys
-- proposal fingerprint
-- tenant FKs and RLS predicates
-- RAW source identity and payload hash
-
-No speculative index is mandatory. Final index selection is part of schema review, not production tuning after the fact.
-
-## 20. Role Boundary Summary
-
-| Role | Core read | Core mutation | Approval | Evidence | RAW | Research | Tenant |
-|---|---|---|---|---|---|---|---|
-| `pai_owner` | controlled | administrative/governed | governed | governed | governed | governed | governed |
-| `pai_core_service` | yes | controlled functions only | controlled transition | no direct write | no | no | no |
-| `pai_core_read` | yes | no | read as permitted | read as permitted | no | no | no |
-| `pai_approval_writer` | limited | no | INSERT only | no | no | no | no |
-| `pai_evidence_writer` | limited | no | no | INSERT only | no | no | no |
-| `pai_raw_writer` | no Core | no | no | no | INSERT only | no | no |
-| `pai_research_writer` | no authoritative Core | no | no | no | no | proposal/raw candidate writes | no |
-| `pai_tenant_app` | approved tenant views/data | tenant-scoped only via RLS | no | no | no | no | yes |
-| `pai_n8n` | transport-only as required | **DENIED** | no | no | intake only | candidate intake only | no |
-
-## 21. Constraint Coverage
-
-| Matrix | v1.1 enforcement |
+| Controls | Enforcement |
 |---|---|
-| C-01–C-04 | explicit version, event sequence, idempotency and controlled transition semantics |
-| C-05–C-08 | append-only approval, permanent entity, governed merge/split |
+| C-01–C-04 | distinct version/event/idempotency mechanisms + controlled transition |
+| C-05–C-08 | append-only approval + permanent entity + governed merge/split |
 | C-09–C-10 | DB-controlled relationship type + unique relationship |
 | C-11–C-15 | M:N evidence links + explicit knowledge state + non-authoritative `is_current` |
-| C-16–C-18 | Core role isolation + proposal separation + unique fingerprint |
-| C-19–C-21 | business/identity separation + deterministic canonicalization + collision review |
+| C-16–C-18 | role separation + proposal separation + fingerprint uniqueness |
+| C-19–C-21 | identity/business separation + deterministic canonicalization + collision review |
 | C-22–C-23 | immutable actor/model/ruleset provenance |
-| C-24–C-27 | global scientific identity + tenant RLS + separate overrides |
-| C-28–C-29 | immutable RAW + no RAW→Core write path |
-| C-30–C-31 | explicit FK delete actions + concrete NOT NULL contract |
-| C-32–C-33 | controlled transition + historical preservation |
+| C-24–C-27 | global identity + tenant RLS + separate overrides |
+| C-28–C-29 | immutable RAW + no RAW→Core path |
+| C-30–C-31 | explicit FK deletion + concrete NOT NULL contract |
+| C-32–C-33 | controlled state transition + history preservation |
 | C-34 | separate tenant/scientific namespaces |
 
-## 22. Review Gates
+## 20. Migration Gate
 
-Before SQL migration design:
+Before any SQL migration is authored:
 
-1. Core write authority PASS.
-2. Tenant RLS PASS.
-3. FK/ON DELETE PASS.
-4. Immutability/provenance PASS.
-5. Event sequence PASS.
-6. Idempotency PASS.
-7. Required fields PASS.
-8. Relationship type PASS.
-9. Canonicalization PASS.
-10. Proposal→Approval PASS.
-11. Index/query hardening PASS.
-12. Supporting hardening checks PASS.
-13. Human Project Owner approval recorded.
+1. All 11 review controls PASS.
+2. Supporting hardening checks PASS.
+3. Schema review decision is recorded with mandatory governance fields.
+4. Human Project Owner approves the reviewed schema.
 
-Until every gate passes, production migration remains BLOCKED.
+Until then:
 
-## 23. Explicitly Blocked
+**PRODUCTION MIGRATION = BLOCKED.**
 
-- Production migration.
-- SQL execution against production.
-- Current Google Sheets import into Core.
-- n8n Core write credentials.
-- AI direct Core mutation.
-- Automatic merge on canonicalization collision.
-- Hard deletion of scientific entities, evidence, approvals or history.
-- Premature Qdrant/RAG/KG/MCP/multi-agent implementation.
+## 21. Explicit Prohibitions
 
-## 24. Next Step
-
-Run `POSTGRESQL-SCHEMA-REVIEW-CHECKLIST-v1.0.md` line-by-line against this v1.1 blueprint and record the result in a versioned Schema Review decision artifact.
+- No production migration.
+- No production DB mutation.
+- No Google Sheets import into Core.
+- No n8n Core write credentials.
+- No AI direct Core mutation.
+- No automatic canonicalization merge.
+- No hard deletion of scientific identity/evidence/history.
+- No premature Qdrant/RAG/KG/MCP/multi-agent implementation.
