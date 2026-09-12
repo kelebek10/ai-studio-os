@@ -1,12 +1,12 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
 **Location:** `governance/CURRENT-STATE.md`  
-**Last Updated:** 2026-09-09
+**Last Updated:** 2026-09-12
 
 ## 1. Purpose
 
@@ -20,13 +20,20 @@ It is not a roadmap, architecture replacement, or implementation specification. 
 
 ## 2. Current Phase
 
-**Phase:** Foundation / Controlled Transition to Implementation
+**Phase:** Phase 1–3 Foundation — Controlled Transition to Schema Design
 
-**Current gate:** ADIM 1 — Repository & Governance Audit completed with **GO**.
+**Completed gates:**
+- ADIM 1 — Repository & Governance Audit: **GO**
+- ADIM 2 — Project Control / Governance Synchronization: **GO**
+- Identity Model v1.2 Constraint Matrix: **APPROVED FOR SCHEMA DESIGN**
+- Decision Recording Standard: **APPROVED**
+- Project Handoff: **APPROVED**
 
-**Next gate:** ADIM 2 — Project Control Documents.
+**Current gate:** PostgreSQL Schema Design
 
-The project is not yet considered ready for uncontrolled production implementation. Implementation must proceed through explicit gates and recorded decisions.
+**Next gate:** Schema Review and Human Project Owner Approval
+
+Production implementation and database migration remain blocked until schema review and approval are complete.
 
 ## 3. Repository State
 
@@ -34,14 +41,16 @@ The project is not yet considered ready for uncontrolled production implementati
 - Repository purpose: AI Studio OS / PAI-FORGE foundation
 - Active development branch: `phase-1-3-foundation`
 - Protected baseline branch: `main`
-- Foundation checkpoint commit: `22b17c3`
-- Foundation checkpoint status: clean and synchronized with remote at the time of audit
+- Latest governance synchronization commit: `governance: synchronize current state before schema design`
+- Foundation work and governance changes remain confined to the development branch.
 - Production directories on Oracle Cloud remain separate from this repository and must not be mixed with the PAI-FORGE source-of-truth repository.
-- CURRENT-STATE.md is maintained on the `phase-1-3-foundation` development branch. Foundation work described in this document must not modify the `main` branch.
+- `main` remains untouched by this governance synchronization.
 
 ## 4. Governance Baseline
 
-The following seven governance documents already exist and are preserved as foundational controls:
+The project governance baseline consists of the foundational governance documents plus the approved control documents created during the Phase 1–3 Foundation transition.
+
+Foundational controls include:
 
 1. `PAI-FORGE-001-ARCHITECTURE-CONSTITUTION.md`
 2. `AI-GOVERNANCE.md`
@@ -50,6 +59,12 @@ The following seven governance documents already exist and are preserved as foun
 5. `DECISION-POLICY.md`
 6. `EVIDENCE-STANDARD.md`
 7. `RESEARCH-PROTOCOL.md`
+
+Current approved control documents include:
+
+8. `DECISION-RECORDING-STANDARD.md`
+9. `PROJECT-HANDOFF.md`
+10. `IDENTITY-MODEL-v1.2-CONSTRAINT-MATRIX.md`
 
 These documents must not be recreated, silently replaced, or bypassed by later implementation work.
 
@@ -120,23 +135,11 @@ The long-term security principle for automation is:
 
 > **n8n must not merely be configured not to write to Core; it must be technically unable to write to Core.**
 
-The required security controls and their technical enforcement mechanism will be finalized in the Sheets → n8n → RAW architecture decision. Until that decision is approved, no automation may receive Core write credentials.
+No automation may receive Core write credentials unless a corresponding security decision is explicitly approved.
 
 ## 8. Data Ingestion Baseline
 
 The initial plant dataset is maintained externally in Google Sheets and is treated as source/candidate data, not authoritative Core data.
-
-Current example fields include:
-
-- `botanical_name`
-- `local_name`
-- `zone_code`
-- `water_need_lt_m2_yil`
-- `data_status`
-- `source`
-- `verified_date`
-
-`data_status` is the Sheets source's own label; it is separate from the pipeline state machine and carries no authority over pipeline state.
 
 The intended ingestion direction is:
 
@@ -158,21 +161,23 @@ Human approval
 Core
 ```
 
-### Principles (binding)
+### Binding principles
 
 - RAW must preserve the original source payload.
 - RAW must not be silently normalized, corrected, or scientifically transformed.
 - Technical validation and scientific verification are separate concerns.
 - Idempotency must not depend solely on spreadsheet row number.
+- RAW immutability, provenance, idempotency, and security controls will be represented explicitly in the PostgreSQL schema blueprint.
 
-### Required Controls (pending ADIM 2 decision)
+## 9. Identity Model v1.2 Status
 
-- Canonical payload hashing should be used for duplicate/revision detection.
-- Hashing must be deterministic and based on the original payload according to a documented canonicalization policy.
-- Rollback should use status/compensating events rather than destructive deletion.
-- Schema drift and source revision must be detectable.
+The Identity Model v1.2 Constraint Matrix is **APPROVED FOR SCHEMA DESIGN**.
 
-## 9. AI Team Baseline
+Its 34 constraints are the authoritative integrity contract for PostgreSQL schema design, including identity separation, event/version controls, immutability, evidence/knowledge separation, tenant isolation, AI proposal separation, provenance, canonicalization, and controlled state transitions.
+
+No PostgreSQL migration has been executed.
+
+## 10. AI Team Baseline
 
 The project may use:
 
@@ -183,92 +188,80 @@ The project may use:
 
 The models are replaceable components, not the permanent system authority.
 
-The orchestration principle is:
-
-```text
-Mission
-  ↓
-Task Definition
-  ↓
-Specialist AI Execution
-  ↓
-Evidence / Validation
-  ↓
-Cross-check where required
-  ↓
-Human Approval
-  ↓
-Authoritative Project State
-```
-
 No AI model may independently redefine Core truth or bypass governance controls.
 
-## 10. Current Known Constraints
+## 11. Current Known Constraints
 
-1. The repository foundation is established, but implementation controls are still being formalized.
-2. The RAW storage/security topology is defined as a target control but is not yet implemented in code or infrastructure.
-3. n8n workflow contracts and credential boundaries are not yet finalized.
-4. Evidence/provenance records still need concrete schemas and lifecycle rules.
-5. The Google Sheets source must be treated as an external candidate-data source.
-6. Scientific verification remains a separate gate from technical ingestion.
-7. Production infrastructure must remain isolated from the development repository until explicit integration decisions are approved.
+1. PostgreSQL schema design has not yet been implemented.
+2. Production database migration has not been executed and is blocked.
+3. RAW storage/security topology remains a design concern to be encoded in the schema and later infrastructure controls.
+4. n8n workflow contracts and credential boundaries must remain subordinate to approved governance decisions.
+5. Evidence/provenance records require concrete schema and lifecycle definitions.
+6. Google Sheets remains an external candidate-data source.
+7. Scientific verification remains separate from technical ingestion.
+8. Production infrastructure remains isolated from the development repository until explicit integration decisions are approved.
 
-## 11. Known Architecture Drift
+## 12. Known Architecture Drift
 
 `architecture/REPOSITORY-STRUCTURE.md` describes a broader future repository structure that includes areas such as `agents/`, `applications/`, `infrastructure/`, and `docs/`.
 
 The current controlled foundation intentionally does not create all of these areas yet.
 
-This is recorded as **planned expansion / architecture drift requiring controlled reconciliation**, not as a current blocker.
+This remains **planned expansion / architecture drift requiring controlled reconciliation**, not a current blocker.
 
 Future structure expansion must be justified by an approved phase requirement rather than created speculatively.
 
-## 12. Completed Work
+## 13. Completed Work
 
 The following work has been completed and checked:
 
 - Repository identity verified.
-- Seven foundational governance documents verified.
+- Foundational governance baseline verified.
 - Foundation directory structure created.
 - Foundation checkpoint committed.
 - Development branch established: `phase-1-3-foundation`.
-- Main branch left untouched by foundation work.
-- Repository synchronization verified at the foundation checkpoint.
+- `main` branch left untouched by foundation and governance work.
 - Initial architecture audit completed.
-- ADIM 1 gate classified as **GO**.
+- ADIM 1 classified as **GO**.
+- Decision Recording Standard established and **APPROVED**.
+- Identity Model v1.2 Constraint Matrix established and **APPROVED FOR SCHEMA DESIGN**.
+- Project Handoff established and **APPROVED**.
+- CURRENT-STATE synchronized to the new governance checkpoint.
 
-## 13. Immediate Next Actions
+## 14. Immediate Next Actions
 
 The controlled next sequence is:
 
-1. Establish `PROJECT-ROADMAP.md`.
-2. Establish the detailed data-ingestion architecture decision document.
-3. Establish the permanent decision registry entry for the Sheets → n8n → RAW boundary.
-4. Establish n8n documentation boundaries before creating workflows.
-5. Define RAW schema, immutability, provenance, idempotency, and security controls.
-6. Only then begin implementation of the ingestion workflow.
+1. Create `POSTGRESQL-SCHEMA-BLUEPRINT-v1.0`.
+2. Map all Identity Model v1.2 constraints C-01 through C-34 to concrete PostgreSQL enforcement.
+3. Define tables, relationships, keys, constraints, indexes, roles, permissions, RLS boundaries, immutable-history mechanisms, and state-transition controls.
+4. Review the blueprint against the governance and Identity Model contracts.
+5. Record the schema decision and obtain Human Project Owner approval.
+6. Only after approval, design and execute a separate migration plan.
 
-## 14. Current Gate
+## 15. Current Gate
 
-### ADIM 2 — PROJECT CONTROL
+### POSTGRESQL SCHEMA DESIGN
 
-**Status:** IN PROGRESS
+**Status:** IN PROGRESS — DESIGN ONLY
 
 **GO condition:**
 
-- Current state documented.
-- Roadmap documented.
-- No contradiction with the seven foundational governance documents.
-- No uncontrolled implementation introduced.
+- Current state synchronized.
+- Identity Model v1.2 approved for schema design.
+- Decision Recording Standard approved.
+- Project Handoff approved.
+- No uncontrolled production implementation introduced.
 
 **STOP condition:**
 
 - Any attempt to write unverified source data directly into Core.
-- Any automation with Core write credentials.
+- Any automation with unauthorized Core write credentials.
 - Any destructive mutation of RAW without an approved control model.
+- Any production migration before schema review and approval.
 - Any architecture change that bypasses decision/version control.
 
-## 15. Change Control
+## 16. Change Control
 
 This document must be updated whenever a material project-state change occurs, including:
 
