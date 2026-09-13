@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.5  
+**Version:** 1.6  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -24,6 +24,7 @@
 - M11 — Idempotency: PASS
 - M11 — Concurrent Retry: PASS
 - M12 — Provenance: PASS
+- M13 — Candidate Boundary: PASS
 
 **M11 disposable execution evidence:**
 - Exact replay: no duplicate effect (`INSERT 0 0`)
@@ -41,11 +42,25 @@
 - Test environment: disposable PostgreSQL test transaction
 - Production data and production credentials were not used
 
+**M13 disposable execution evidence:**
+- Direct Candidate → Verified: rejected — PASS
+- Direct Candidate → Approved: rejected — PASS
+- Unauthorized Candidate → Verified: rejected — PASS
+- Controlled Candidate → Verified: accepted — PASS
+- Direct Verified → Approved: rejected — PASS
+- Controlled Verified → Approved: accepted — PASS
+- Final state: `APPROVED`
+- Provenance reference: `PROV-004`
+- Actor role: `HUMAN_APPROVER`
+- Test environment: disposable PostgreSQL 16 container `paiforge-m11-postgres`
+- Transaction completed with `ROLLBACK`
+- Production data and production credentials were not used
+
 **Current gate:** PostgreSQL Migration Design
 
-**Next control:** M13 — Candidate Boundary
+**Next control:** M14 — Approval Authority
 
-**M13 control objective:** Candidate data cannot silently become verified/approved.
+**M14 control objective:** Unauthorized approval principal is rejected.
 
 **Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
 
@@ -55,7 +70,7 @@
 - Active branch: `phase-1-3-foundation`
 - Protected baseline branch: `main`
 - `main` remains untouched.
-- Latest governance commit: `PENDING — M12 record / v1.5`
+- Latest governance commit: `PENDING — M13 record / v1.6`
 
 ## Authoritative PostgreSQL Artifacts
 
@@ -83,9 +98,9 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Execute M13 — Candidate Boundary in the same disposable/non-production PostgreSQL discipline.
-2. Verify that candidate data cannot silently become verified or approved.
-3. Record M13 PASS/FAIL with reproducible evidence.
+1. Execute M14 — Approval Authority in the same disposable/non-production PostgreSQL discipline.
+2. Verify that unauthorized approval principals are rejected.
+3. Record M14 PASS/FAIL with reproducible evidence.
 4. Continue the migration test matrix in control order.
 5. Record Migration Design Review PASS/FAIL only after applicable controls pass.
 6. Obtain separate approval before any production migration execution.
