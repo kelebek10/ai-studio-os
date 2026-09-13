@@ -1,0 +1,173 @@
+-- PAI-FORGE v1.3 NONPROD EXECUTABLE TEST MIGRATION
+-- Target: disposable PostgreSQL 16 only. Never production.
+-- Scope: P0/P1 governance + constraint/conflict enforcement boundary.
+
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE SCHEMA IF NOT EXISTS core;
+CREATE SCHEMA IF NOT EXISTS evidence;
+CREATE SCHEMA IF NOT EXISTS tenant;
+CREATE SCHEMA IF NOT EXISTS governance;
+
+CREATE TABLE core.entity (
+ entity_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ entity_type text NOT NULL CHECK (entity_type IN ('PLANT','SITE','MATERIAL','DESIGN','OTHER')),
+ scientific_identity_key text NOT NULL UNIQUE,
+ canonical_name text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL,
+ version bigint NOT NULL DEFAULT 1 CHECK (version>0),
+ status text NOT NULL CHECK (status IN ('ACTIVE','INACTIVE','SUPERSEDED'))
+);
+
+CREATE TABLE evidence.record (
+ evidence_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ source_system text NOT NULL, source_record_key text NOT NULL, source_version text NOT NULL,
+ content_hash text NOT NULL, captured_at timestamptz NOT NULL,
+ verification_state text NOT NULL CHECK (verification_state IN ('UNVERIFIED','VERIFIED','REJECTED')),
+ status text NOT NULL CHECK (status IN ('ACTIVE','INVALIDATED','SUPERSEDED')),
+ actor_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE tenant.tenant (
+ tenant_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ name text NOT NULL,
+ status text NOT NULL CHECK (status IN ('ACTIVE','SUSPENDED','ARCHIVED')),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE tenant.entity_override (
+ tenant_id uuid NOT NULL REFERENCES tenant.tenant(tenant_id) ON DELETE RESTRICT,
+ entity_id uuid NOT NULL REFERENCES core.entity(entity_id) ON DELETE RESTRICT,
+ payload jsonb NOT NULL, version bigint NOT NULL CHECK(version>0),
+ status text NOT NULL CHECK(status IN ('ACTIVE','INACTIVE','SUPERSEDED')),
+ created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(tenant_id,entity_id)
+);
+
+CREATE TABLE core.constraint (
+ constraint_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ constraint_key text NOT NULL UNIQUE,
+ classification text NOT NULL CHECK(classification IN ('SAFETY_ENGINEERING','CUSTOMER_HARD','CUSTOMER_GOAL','PREFERENCE','OPTIMIZATION','AESTHETIC')),
+ created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL
+);
+
+CREATE TABLE core.constraint_version (
+ constraint_version_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ constraint_id uuid NOT NULL REFERENCES core.constraint(constraint_id) ON DELETE RESTRICT,
+ version bigint NOT NULL CHECK(version>0),
+ enforcement text NOT NULL CHECK(enforcement IN ('NON_NEGOTIABLE','HARD','SOFT','INFORMATIONAL')),
+ priority text NOT NULL CHECK(priority IN ('P0','P1','P2','P3','P4')),
+ ruleset_version text NOT NULL, content_hash text NOT NULL,
+ provenance_ref uuid REFERENCES evidence.record(evidence_id) ON DELETE RESTRICT,
+ created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL,
+ UNIQUE(constraint_id,version),
+ CHECK ((classification <> 'SAFETY_ENGINEERING') OR enforcement='NON_NEGOTIABLE')
+);
+
+CREATE TABLE governance.design_state (
+ design_state_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), design_id uuid NOT NULL,
+ state_version bigint NOT NULL CHECK(state_version>0), state_hash text NOT NULL,
+ ruleset_version text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL,
+ UNIQUE(design_id,state_version), UNIQUE(design_id,state_hash)
+);
+
+CREATE TABLE governance.impact_dependency (
+ impact_dependency_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ design_state_id uuid NOT NULL REFERENCES governance.design_state(design_state_id) ON DELETE RESTRICT,
+ source_type text NOT NULL CHECK(source_type IN ('ACTION','CONSTRAINT','ENTITY','SITE','DESIGN')),
+ source_id uuid NOT NULL,
+ impact_type text NOT NULL CHECK(impact_type IN ('POSITIVE','NEGATIVE','NEUTRAL','BLOCKING')),
+ dependency_type text NOT NULL CHECK(dependency_type IN ('REQUIRES','CONFLICTS_WITH','AFFECTS','DEPENDS_ON')),
+ result text NOT NULL CHECK(result IN ('CONFIRMED','UNKNOWN','REQUIRES_REVIEW')),
+ ruleset_version text NOT NULL, provenance_ref uuid REFERENCES evidence.record(evidence_id) ON DELETE RESTRICT,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE governance.feasibility_evaluation (
+ feasibility_evaluation_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ design_state_id uuid NOT NULL REFERENCES governance.design_state(design_state_id) ON DELETE RESTRICT,
+ input_hash text NOT NULL,
+ result text NOT NULL CHECK(result IN ('FEASIBLE','INFEASIBLE','PARTIALLY_FEASIBLE','REQUIRES_REVIEW')),
+ engine_id text NOT NULL, engine_version text NOT NULL, ruleset_version text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE governance.change_request (
+ change_request_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), request_key text NOT NULL UNIQUE,
+ design_state_id uuid NOT NULL REFERENCES governance.design_state(design_state_id) ON DELETE RESTRICT,
+ expected_state_version bigint NOT NULL CHECK(expected_state_version>0), canonical_request_hash text NOT NULL,
+ status text NOT NULL CHECK(status IN ('CANDIDATE','VERIFIED','APPROVED','REJECTED','STALE','APPLIED')),
+ created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL
+);
+
+CREATE TABLE governance.conflict (
+ conflict_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), action_id uuid NOT NULL, change_request_id uuid,
+ design_state_id uuid NOT NULL REFERENCES governance.design_state(design_state_id) ON DELETE RESTRICT,
+ state_version bigint NOT NULL CHECK(state_version>0), state_hash text NOT NULL,
+ status text NOT NULL CHECK(status IN ('OPEN','RESOLVED','REQUIRES_ENGINEERING_REVIEW','SUPERSEDED')),
+ created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL
+);
+
+CREATE TABLE governance.conflict_constraint (
+ conflict_id uuid NOT NULL REFERENCES governance.conflict(conflict_id) ON DELETE RESTRICT,
+ constraint_version_id uuid NOT NULL REFERENCES core.constraint_version(constraint_version_id) ON DELETE RESTRICT,
+ PRIMARY KEY(conflict_id,constraint_version_id)
+);
+
+CREATE TABLE governance.alternative (
+ alternative_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ conflict_id uuid NOT NULL REFERENCES governance.conflict(conflict_id) ON DELETE RESTRICT,
+ status text NOT NULL CHECK(status IN ('CANDIDATE','FEASIBLE','INFEASIBLE','SELECTED','REJECTED')),
+ proposal_hash text NOT NULL,
+ feasibility_id uuid REFERENCES governance.feasibility_evaluation(feasibility_evaluation_id) ON DELETE RESTRICT,
+ created_at timestamptz NOT NULL DEFAULT now(), created_by uuid NOT NULL
+);
+
+CREATE TABLE governance.resolution (
+ resolution_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ conflict_id uuid NOT NULL REFERENCES governance.conflict(conflict_id) ON DELETE RESTRICT,
+ alternative_id uuid REFERENCES governance.alternative(alternative_id) ON DELETE RESTRICT,
+ status text NOT NULL CHECK(status IN ('PROPOSED','APPROVED','REJECTED','ENGINEERING_REVIEW')),
+ decision_hash text NOT NULL, actor_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE governance.approval_event (
+ approval_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ resolution_id uuid NOT NULL REFERENCES governance.resolution(resolution_id) ON DELETE RESTRICT,
+ event_type text NOT NULL CHECK(event_type IN ('SUBMITTED','APPROVED','REJECTED','ENGINEERING_REVIEW')),
+ actor_id uuid NOT NULL, actor_role text NOT NULL, authorization_ref text NOT NULL,
+ idempotency_key text NOT NULL UNIQUE, created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION governance.reject_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'IMMUTABLE_RECORD: % is append-only',TG_TABLE_NAME; END; $$;
+CREATE TRIGGER design_state_immutable BEFORE UPDATE OR DELETE ON governance.design_state FOR EACH ROW EXECUTE FUNCTION governance.reject_mutation();
+CREATE TRIGGER conflict_immutable BEFORE UPDATE OR DELETE ON governance.conflict FOR EACH ROW EXECUTE FUNCTION governance.reject_mutation();
+CREATE TRIGGER resolution_immutable BEFORE UPDATE OR DELETE ON governance.resolution FOR EACH ROW EXECUTE FUNCTION governance.reject_mutation();
+CREATE TRIGGER approval_event_immutable BEFORE UPDATE OR DELETE ON governance.approval_event FOR EACH ROW EXECUTE FUNCTION governance.reject_mutation();
+
+CREATE OR REPLACE FUNCTION governance.validate_conflict_snapshot() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v bigint; h text;
+BEGIN SELECT state_version,state_hash INTO v,h FROM governance.design_state WHERE design_state_id=NEW.design_state_id;
+ IF v IS NULL OR v<>NEW.state_version OR h<>NEW.state_hash THEN RAISE EXCEPTION 'CONFLICT_STATE_MISMATCH'; END IF;
+ RETURN NEW; END; $$;
+CREATE TRIGGER conflict_snapshot BEFORE INSERT ON governance.conflict FOR EACH ROW EXECUTE FUNCTION governance.validate_conflict_snapshot();
+
+CREATE OR REPLACE FUNCTION governance.reject_partial_feasibility() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN IF NEW.result='PARTIALLY_FEASIBLE' THEN RAISE EXCEPTION 'PARTIALLY_FEASIBLE_REQUIRES_REVIEW'; END IF; RETURN NEW; END; $$;
+CREATE TRIGGER partial_feasibility BEFORE INSERT ON governance.feasibility_evaluation FOR EACH ROW EXECUTE FUNCTION governance.reject_partial_feasibility();
+
+CREATE OR REPLACE FUNCTION tenant.current_tenant_id() RETURNS uuid LANGUAGE sql STABLE AS $$
+ SELECT NULLIF(current_setting('app.tenant_id',true),'')::uuid; $$;
+ALTER TABLE tenant.entity_override ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant.entity_override FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON tenant.entity_override USING(tenant_id=tenant.current_tenant_id()) WITH CHECK(tenant_id=tenant.current_tenant_id());
+
+CREATE INDEX ix_constraint_version ON core.constraint_version(constraint_id,version);
+CREATE INDEX ix_design_state_version ON governance.design_state(design_id,state_version);
+CREATE INDEX ix_design_state_hash ON governance.design_state(design_id,state_hash);
+CREATE INDEX ix_conflict_state ON governance.conflict(design_state_id,state_version,state_hash);
+CREATE INDEX ix_feasibility_input ON governance.feasibility_evaluation(input_hash);
+CREATE INDEX ix_change_request_hash ON governance.change_request(canonical_request_hash);
+
+COMMIT;
