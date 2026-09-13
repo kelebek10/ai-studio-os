@@ -1,20 +1,18 @@
 -- PAI-FORGE v1.3 NONPROD FOUNDATION VERIFICATION
 -- Target: disposable PostgreSQL 16 only. Never production.
 -- Scope: controls actually implemented by 001_paiforge_v13_test.sql.
+-- RLS must be tested with a non-superuser because the bootstrap test_admin role is a PostgreSQL superuser.
 -- Expected outcome: all assertions PASS.
 
 \set ON_ERROR_STOP on
+BEGIN;
 
 DO $$
 DECLARE n integer;
 BEGIN
   SELECT count(*) INTO n FROM information_schema.tables
   WHERE table_schema IN ('core','evidence','tenant','governance')
-    AND table_name IN (
-      'entity','record','tenant','entity_override','constraint','constraint_version',
-      'design_state','impact_dependency','feasibility_evaluation','change_request',
-      'conflict','conflict_constraint','alternative','resolution','approval_event'
-    );
+    AND table_name IN ('entity','record','tenant','entity_override','constraint','constraint_version','design_state','impact_dependency','feasibility_evaluation','change_request','conflict','conflict_constraint','alternative','resolution','approval_event');
   IF n <> 15 THEN RAISE EXCEPTION 'M01_SCHEMA_INVENTORY_FAIL: expected 15 tables, got %',n; END IF;
   RAISE NOTICE 'M01 PASS: schema inventory';
 END $$;
@@ -116,15 +114,19 @@ BEGIN
 END $$;
 
 DO $$
-DECLARE t1 uuid := gen_random_uuid(); t2 uuid := gen_random_uuid(); e uuid := gen_random_uuid();
-        visible_count integer;
+DECLARE t1 uuid := gen_random_uuid(); t2 uuid := gen_random_uuid(); e uuid := gen_random_uuid(); visible_count integer;
 BEGIN
   INSERT INTO tenant.tenant(tenant_id,name,status) VALUES(t1,'M05 T1','ACTIVE'),(t2,'M05 T2','ACTIVE');
   INSERT INTO core.entity(entity_id,entity_type,scientific_identity_key,canonical_name,created_by,status)
   VALUES(e,'OTHER','m05-entity','M05 entity',gen_random_uuid(),'ACTIVE');
   INSERT INTO tenant.entity_override(tenant_id,entity_id,payload,version,status)
   VALUES(t1,e,'{"owner":"t1"}',1,'ACTIVE');
-  PERFORM set_config('app.tenant_id',t2::text,false);
+  CREATE ROLE paiforge_rls_tester NOLOGIN;
+  GRANT USAGE ON SCHEMA tenant TO paiforge_rls_tester;
+  GRANT SELECT, INSERT ON tenant.entity_override TO paiforge_rls_tester;
+  GRANT SELECT ON tenant.tenant, core.entity TO paiforge_rls_tester;
+  EXECUTE format('SET LOCAL ROLE %I', 'paiforge_rls_tester');
+  PERFORM set_config('app.tenant_id',t2::text,true);
   SELECT count(*) INTO visible_count FROM tenant.entity_override WHERE tenant_id=t1;
   IF visible_count <> 0 THEN RAISE EXCEPTION 'M05_RLS_FAIL: cross-tenant row visible'; END IF;
   BEGIN
@@ -134,18 +136,18 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege OR check_violation THEN
     NULL;
   END;
+  RESET ROLE;
   RAISE NOTICE 'M05 PASS: tenant RLS isolation';
 END $$;
 
 DO $$
-DECLARE c uuid := gen_random_uuid(); cv uuid; f uuid;
+DECLARE c uuid := gen_random_uuid(); cv uuid;
 BEGIN
   INSERT INTO core.constraint(constraint_id,constraint_key,classification,created_by)
   VALUES(c,'m17-constraint','CUSTOMER_HARD',gen_random_uuid());
   INSERT INTO core.constraint_version(constraint_id,version,enforcement,priority,ruleset_version,content_hash,created_by)
   VALUES(c,1,'HARD','P1','test-v1','m17-cv',gen_random_uuid()) RETURNING constraint_version_id INTO cv;
-  SELECT constraint_version_id INTO f FROM core.constraint_version WHERE constraint_version_id=cv;
-  IF f IS NULL THEN RAISE EXCEPTION 'M17_FAIL: constraint version missing'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM core.constraint_version WHERE constraint_version_id=cv) THEN RAISE EXCEPTION 'M17_FAIL: constraint version missing'; END IF;
   RAISE NOTICE 'M17 PASS: conflict constraint version FK target exists';
 END $$;
 
@@ -153,8 +155,7 @@ DO $$
 DECLARE r uuid := gen_random_uuid();
 BEGIN
   INSERT INTO governance.resolution(resolution_id,conflict_id,status,decision_hash,actor_id)
-  SELECT r, conflict_id,'PROPOSED','m20-resolution',gen_random_uuid()
-  FROM governance.conflict LIMIT 1;
+  SELECT r, conflict_id,'PROPOSED','m20-resolution',gen_random_uuid() FROM governance.conflict LIMIT 1;
   BEGIN
     DELETE FROM governance.resolution WHERE resolution_id=r;
     RAISE EXCEPTION 'M20_IMMUTABILITY_FAIL: resolution delete accepted';
@@ -168,12 +169,10 @@ DO $$
 DECLARE a uuid := gen_random_uuid();
 BEGIN
   INSERT INTO governance.approval_event(approval_event_id,resolution_id,event_type,actor_id,actor_role,authorization_ref,idempotency_key)
-  SELECT a,resolution_id,'SUBMITTED',gen_random_uuid(),'HUMAN','m21-auth','m21-key'
-  FROM governance.resolution LIMIT 1;
+  SELECT a,resolution_id,'SUBMITTED',gen_random_uuid(),'HUMAN','m21-auth','m21-key' FROM governance.resolution LIMIT 1;
   BEGIN
     INSERT INTO governance.approval_event(resolution_id,event_type,actor_id,actor_role,authorization_ref,idempotency_key)
-    SELECT resolution_id,'SUBMITTED',gen_random_uuid(),'HUMAN','m21-auth','m21-key'
-    FROM governance.resolution LIMIT 1;
+    SELECT resolution_id,'SUBMITTED',gen_random_uuid(),'HUMAN','m21-auth','m21-key' FROM governance.resolution LIMIT 1;
     RAISE EXCEPTION 'M11_IDEMPOTENCY_FAIL: duplicate key accepted';
   EXCEPTION WHEN unique_violation THEN
     RAISE NOTICE 'M11 PASS: approval idempotency key';
@@ -182,7 +181,7 @@ END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='tenant' AND indexname='ix_constraint_version') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='core' AND indexname='ix_constraint_version') THEN
     RAISE EXCEPTION 'M24_INDEX_FAIL: expected index missing';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='tenant' AND tablename='entity_override' AND policyname='tenant_isolation') THEN
@@ -191,4 +190,5 @@ BEGIN
   RAISE NOTICE 'M24 PASS: required index/policy inventory';
 END $$;
 
+COMMIT;
 SELECT 'PAI-FORGE NONPROD FOUNDATION VERIFICATION: PASS' AS result;
