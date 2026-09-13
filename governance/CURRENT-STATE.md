@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.3  
+**Version:** 1.4  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -18,10 +18,22 @@
 - PostgreSQL Blueprint v1.3: CONTROLLED RE-REVIEW PASS
 - PostgreSQL final pre-approval test 001: PASS
 - Human Project Owner approval: APPROVED FOR MIGRATION DESIGN
+- M08 — State Transition: PASS
+- M09 — Optimistic Concurrency: PASS
+- M10 — Event Sequencing: PASS
+- M11 — Idempotency: PASS
+
+**M11 disposable execution evidence:**
+- Exact replay: no duplicate effect (`INSERT 0 0`)
+- Conflicting replay: rejected
+- Canonical identity preserved (`HASH-A`)
+- Concurrent retry: no duplicate effect (`effect_count = 1`)
+- Test environment: disposable PostgreSQL 16 container `paiforge-m11-postgres`
+- Production data and production credentials were not used
 
 **Current gate:** PostgreSQL Migration Design
 
-**Next gate:** Migration Design Review — PASS/FAIL
+**Next control:** M12 — Provenance
 
 **Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
 
@@ -58,10 +70,10 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Complete migration design against Blueprint v1.3 and controlled contracts.
-2. Review SQL skeleton for dependency, privilege, RLS, immutability and rollback correctness.
-3. Execute the migration test matrix in a disposable/non-production PostgreSQL environment only after the design gate authorizes testing.
-4. Record Migration Design Review PASS/FAIL.
+1. Execute M12 — Provenance in the same disposable/non-production PostgreSQL discipline.
+2. Record M12 PASS/FAIL with reproducible evidence.
+3. Continue the migration test matrix in control order.
+4. Record Migration Design Review PASS/FAIL only after applicable controls pass.
 5. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
