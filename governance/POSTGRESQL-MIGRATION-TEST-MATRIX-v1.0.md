@@ -39,6 +39,29 @@ This matrix validates migration design before any production execution. It does 
 | M25 | Security grants | Least-privilege grants match role matrix |
 | M26 | Production safety | No test path can target production credentials |
 
+## M13 Execution Record — PASS
+
+**Control objective:** Candidate data cannot silently become verified/approved.
+
+**Execution environment:** Disposable PostgreSQL 16 container `paiforge-m11-postgres`; production data and production credentials were not used.
+
+### Six checks
+
+| Check | Result |
+|---|---|
+| Direct Candidate → Verified | **PASS — rejected** |
+| Direct Candidate → Approved | **PASS — rejected** |
+| Unauthorized Candidate → Verified | **PASS — rejected** |
+| Controlled Candidate → Verified | **PASS — accepted** |
+| Direct Verified → Approved | **PASS — rejected** |
+| Controlled Verified → Approved | **PASS — accepted** |
+
+**Final state:** `APPROVED`  
+**Provenance reference:** `PROV-004`  
+**Actor role:** `HUMAN_APPROVER`  
+**Cleanup:** Transaction completed with `ROLLBACK`.  
+**M13 result:** **PASS**
+
 ## Required Review Modes
 
 1. Static schema review
