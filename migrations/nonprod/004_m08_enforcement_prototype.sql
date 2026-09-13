@@ -1,6 +1,7 @@
--- PAI-FORGE M08 ENFORCEMENT PROTOTYPE v1.0
+-- PAI-FORGE M08 ENFORCEMENT PROTOTYPE v1.1
 -- Disposable PostgreSQL only. Apply AFTER 001_paiforge_v13_test.sql.
 -- Production migration remains blocked.
+-- v1.1: reset transaction-local transition context after controlled lifecycle UPDATE.
 
 BEGIN;
 
@@ -55,6 +56,10 @@ DECLARE r governance.change_request%ROWTYPE; ds governance.design_state%ROWTYPE;
 BEGIN
   SELECT * INTO r FROM governance.change_request WHERE request_key=p_request_key FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'CHANGE_REQUEST_NOT_FOUND'; END IF;
+  IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='CHANGE_REQUEST' AND canonical_identity=p_canonical_identity) THEN
+    SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='CHANGE_REQUEST' AND canonical_identity=p_canonical_identity;
+    RETURN ev;
+  END IF;
   IF r.status<>p_from_status THEN RAISE EXCEPTION 'INVALID_PREDECESSOR_STATE'; END IF;
   IF r.expected_state_version<>p_expected_state_version::bigint THEN RAISE EXCEPTION 'STALE_STATE_VERSION'; END IF;
   SELECT * INTO ds FROM governance.design_state WHERE design_state_id=r.design_state_id;
@@ -65,12 +70,9 @@ BEGIN
           (p_from_status='APPROVED' AND p_to_status IN ('APPLIED','STALE'))) THEN
     RAISE EXCEPTION 'INVALID_STATE_TRANSITION';
   END IF;
-  IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='CHANGE_REQUEST' AND canonical_identity=p_canonical_identity) THEN
-    SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='CHANGE_REQUEST' AND canonical_identity=p_canonical_identity;
-    RETURN ev;
-  END IF;
   PERFORM set_config('paiforge.transition_context','CONTROLLED',true);
   UPDATE governance.change_request SET status=p_to_status WHERE change_request_id=r.change_request_id;
+  PERFORM set_config('paiforge.transition_context','',true);
   INSERT INTO governance.transition_event(entity_type,entity_id,from_status,to_status,expected_state_version,expected_state_hash,canonical_identity,actor_id,authorization_ref)
   VALUES('CHANGE_REQUEST',r.change_request_id,p_from_status,p_to_status,r.expected_state_version,ds.state_hash,p_canonical_identity,p_actor_id::uuid,p_canonical_identity)
   RETURNING transition_event_id INTO ev;
@@ -90,18 +92,19 @@ DECLARE a governance.alternative%ROWTYPE; ev uuid;
 BEGIN
   SELECT * INTO a FROM governance.alternative WHERE alternative_id=p_alternative_id::uuid FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'ALTERNATIVE_NOT_FOUND'; END IF;
+  IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='ALTERNATIVE' AND canonical_identity=p_canonical_identity) THEN
+    SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='ALTERNATIVE' AND canonical_identity=p_canonical_identity;
+    RETURN ev;
+  END IF;
   IF a.status<>p_from_status THEN RAISE EXCEPTION 'INVALID_PREDECESSOR_STATE'; END IF;
   IF NOT ((p_from_status='CANDIDATE' AND p_to_status IN ('FEASIBLE','INFEASIBLE','REJECTED')) OR
           (p_from_status='FEASIBLE' AND p_to_status IN ('SELECTED','REJECTED')) OR
           (p_from_status='INFEASIBLE' AND p_to_status='REJECTED')) THEN
     RAISE EXCEPTION 'INVALID_STATE_TRANSITION';
   END IF;
-  IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='ALTERNATIVE' AND canonical_identity=p_canonical_identity) THEN
-    SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='ALTERNATIVE' AND canonical_identity=p_canonical_identity;
-    RETURN ev;
-  END IF;
   PERFORM set_config('paiforge.transition_context','CONTROLLED',true);
   UPDATE governance.alternative SET status=p_to_status WHERE alternative_id=a.alternative_id;
+  PERFORM set_config('paiforge.transition_context','',true);
   INSERT INTO governance.transition_event(entity_type,entity_id,from_status,to_status,canonical_identity,actor_id,authorization_ref)
   VALUES('ALTERNATIVE',a.alternative_id,p_from_status,p_to_status,p_canonical_identity,p_actor_id::uuid,p_canonical_identity)
   RETURNING transition_event_id INTO ev;
@@ -109,7 +112,6 @@ BEGIN
 END;
 $$;
 
--- Conflict and resolution remain append-only. Their controlled functions record immutable transition evidence.
 CREATE OR REPLACE FUNCTION governance.transition_conflict(
   p_conflict_id text, p_from_status text, p_to_status text, p_canonical_identity text, p_actor_id text
 ) RETURNS uuid
@@ -118,9 +120,9 @@ DECLARE c governance.conflict%ROWTYPE; ev uuid;
 BEGIN
  SELECT * INTO c FROM governance.conflict WHERE conflict_id=p_conflict_id::uuid;
  IF NOT FOUND THEN RAISE EXCEPTION 'CONFLICT_NOT_FOUND'; END IF;
+ IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='CONFLICT' AND canonical_identity=p_canonical_identity) THEN SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='CONFLICT' AND canonical_identity=p_canonical_identity; RETURN ev; END IF;
  IF c.status<>p_from_status THEN RAISE EXCEPTION 'INVALID_PREDECESSOR_STATE'; END IF;
  IF NOT (p_from_status='OPEN' AND p_to_status IN ('RESOLVED','REQUIRES_ENGINEERING_REVIEW','SUPERSEDED')) THEN RAISE EXCEPTION 'INVALID_CONFLICT_TRANSITION'; END IF;
- IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='CONFLICT' AND canonical_identity=p_canonical_identity) THEN SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='CONFLICT' AND canonical_identity=p_canonical_identity; RETURN ev; END IF;
  INSERT INTO governance.transition_event(entity_type,entity_id,from_status,to_status,expected_state_version,expected_state_hash,canonical_identity,actor_id,authorization_ref)
  VALUES('CONFLICT',c.conflict_id,c.status,p_to_status,c.state_version,c.state_hash,p_canonical_identity,p_actor_id::uuid,p_canonical_identity) RETURNING transition_event_id INTO ev;
  RETURN ev;
@@ -135,9 +137,9 @@ DECLARE r governance.resolution%ROWTYPE; ev uuid;
 BEGIN
  SELECT * INTO r FROM governance.resolution WHERE resolution_id=p_resolution_id::uuid;
  IF NOT FOUND THEN RAISE EXCEPTION 'RESOLUTION_NOT_FOUND'; END IF;
+ IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='RESOLUTION' AND canonical_identity=p_canonical_identity) THEN SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='RESOLUTION' AND canonical_identity=p_canonical_identity; RETURN ev; END IF;
  IF r.status<>p_from_status THEN RAISE EXCEPTION 'INVALID_PREDECESSOR_STATE'; END IF;
  IF NOT (p_from_status='PROPOSED' AND p_to_status IN ('APPROVED','REJECTED','ENGINEERING_REVIEW')) THEN RAISE EXCEPTION 'INVALID_RESOLUTION_TRANSITION'; END IF;
- IF EXISTS(SELECT 1 FROM governance.transition_event WHERE entity_type='RESOLUTION' AND canonical_identity=p_canonical_identity) THEN SELECT transition_event_id INTO ev FROM governance.transition_event WHERE entity_type='RESOLUTION' AND canonical_identity=p_canonical_identity; RETURN ev; END IF;
  INSERT INTO governance.transition_event(entity_type,entity_id,from_status,to_status,canonical_identity,actor_id,authorization_ref)
  VALUES('RESOLUTION',r.resolution_id,r.status,p_to_status,p_canonical_identity,p_actor_id::uuid,p_canonical_identity) RETURNING transition_event_id INTO ev;
  RETURN ev;
