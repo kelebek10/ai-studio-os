@@ -1,12 +1,12 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.6  
+**Version:** 1.7  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
 **Location:** `governance/CURRENT-STATE.md`  
-**Last Updated:** 2026-09-13
+**Last Updated:** 2026-09-14
 
 ## Current Phase
 
@@ -18,13 +18,27 @@
 - PostgreSQL Blueprint v1.3: CONTROLLED RE-REVIEW PASS
 - PostgreSQL final pre-approval test 001: PASS
 - Human Project Owner approval: APPROVED FOR MIGRATION DESIGN
-- M08 — State Transition: PASS
-- M09 — Optimistic Concurrency: PASS
-- M10 — Event Sequencing: PASS
-- M11 — Idempotency: PASS
-- M11 — Concurrent Retry: PASS
-- M12 — Provenance: PASS
-- M13 — Candidate Boundary: PASS
+- M08 — State Transition: PASS — reproducible disposable PostgreSQL execution evidence recorded
+- M11 — Idempotency: PASS — evidence exists; further raw-evidence strengthening recommended
+- M11 — Concurrent Retry: PASS — evidence exists; real parallel-session evidence strengthening recommended
+- M12 — Provenance: PASS — evidence exists; provenance hash/tamper evidence strengthening recommended
+
+**Controls requiring evidence rework / re-verification:**
+- M09 — Optimistic Concurrency: UNVERIFIED — prior PASS lacked sufficient execution evidence
+- M10 — Event Sequencing: UNVERIFIED — prior PASS lacked sufficient execution evidence
+- M13 — Candidate Boundary: UNVERIFIED — prior PASS evidence is insufficient to establish DB-level bypass resistance and authority integrity
+- M14 — Approval Authority: NOT EXECUTED
+
+**M08 disposable execution evidence:**
+- Controlled `CANDIDATE → VERIFIED`: accepted with `HUMAN_REVIEWER`
+- Invalid `CANDIDATE → APPROVED`: rejected
+- Direct `UPDATE` state bypass: rejected by DB trigger
+- Unauthorized `AI` actor: rejected by DB authority rule
+- Final state after rollback-scoped tests: `CANDIDATE / version 1 / SYSTEM`
+- Test environment: disposable PostgreSQL 16 container `paiforge-m08-consortium-postgres`
+- Production data and production credentials were not used
+- Raw execution evidence SHA-256: `f69ab7527f1a1f8de1ff6c378735c1f92e5667fdcec78d3d1836c6d12938b63f`
+- Governance record: `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md`
 
 **M11 disposable execution evidence:**
 - Exact replay: no duplicate effect (`INSERT 0 0`)
@@ -42,25 +56,13 @@
 - Test environment: disposable PostgreSQL test transaction
 - Production data and production credentials were not used
 
-**M13 disposable execution evidence:**
-- Direct Candidate → Verified: rejected — PASS
-- Direct Candidate → Approved: rejected — PASS
-- Unauthorized Candidate → Verified: rejected — PASS
-- Controlled Candidate → Verified: accepted — PASS
-- Direct Verified → Approved: rejected — PASS
-- Controlled Verified → Approved: accepted — PASS
-- Final state: `APPROVED`
-- Provenance reference: `PROV-004`
-- Actor role: `HUMAN_APPROVER`
-- Test environment: disposable PostgreSQL 16 container `paiforge-m11-postgres`
-- Transaction completed with `ROLLBACK`
-- Production data and production credentials were not used
+**M13 evidence status:**
+- Existing six-check record remains historical evidence only.
+- Current governance status is UNVERIFIED pending independent DB-level authority, bypass, concurrency, rollback and provenance-integrity evidence.
 
 **Current gate:** PostgreSQL Migration Design
 
-**Next control:** M14 — Approval Authority
-
-**M14 control objective:** Unauthorized approval principal is rejected.
+**Next control:** M09 — Optimistic Concurrency (evidence re-verification)
 
 **Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
 
@@ -70,7 +72,7 @@
 - Active branch: `phase-1-3-foundation`
 - Protected baseline branch: `main`
 - `main` remains untouched.
-- Latest governance commit: `PENDING — M13 record / v1.6`
+- Latest governance commits: M08 execution record `3896509f4b258b7c3905f376bd61600e2681f148`; CURRENT-STATE v1.7 recorded immediately after.
 
 ## Authoritative PostgreSQL Artifacts
 
@@ -81,6 +83,7 @@
 - `governance/POSTGRESQL-MIGRATION-DESIGN-PLAN-v1.0.md` — design plan
 - `governance/POSTGRESQL-MIGRATION-TEST-MATRIX-v1.0.md` — migration test matrix
 - `governance/POSTGRESQL-MIGRATION-SQL-SKELETON-v1.0.md` — non-executable SQL structure
+- `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md` — M08 reproducible execution evidence
 
 ## Migration Preconditions
 
@@ -98,12 +101,13 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Execute M14 — Approval Authority in the same disposable/non-production PostgreSQL discipline.
-2. Verify that unauthorized approval principals are rejected.
-3. Record M14 PASS/FAIL with reproducible evidence.
-4. Continue the migration test matrix in control order.
-5. Record Migration Design Review PASS/FAIL only after applicable controls pass.
-6. Obtain separate approval before any production migration execution.
+1. Re-verify M09 — Optimistic Concurrency with reproducible disposable PostgreSQL execution evidence.
+2. Re-verify M10 — Event Sequencing with reproducible execution evidence.
+3. Strengthen M11/M12 evidence where noted.
+4. Rework M13 with independent DB-level authority/bypass, concurrency, rollback and provenance-integrity tests.
+5. Execute M14 — Approval Authority only after preceding controls are adequately evidenced.
+6. Record Migration Design Review PASS/FAIL only after applicable controls pass.
+7. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
 
