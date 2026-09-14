@@ -1,9 +1,11 @@
--- PAI-FORGE M12 PROVENANCE STRENGTHENING PILOT v1.0
+-- PAI-FORGE M12 PROVENANCE STRENGTHENING PILOT v1.1
 -- NONPROD ONLY. Disposable PostgreSQL test database only.
 -- Never execute against production/Core databases.
 -- Purpose: strengthen M12 evidence with independent hash-chain and tamper detection.
 
 BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE SCHEMA IF NOT EXISTS m12_test;
 
