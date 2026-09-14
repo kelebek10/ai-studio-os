@@ -18,8 +18,11 @@ $$;
 
 CREATE SCHEMA IF NOT EXISTS governance;
 
--- F1: immutable audit ledger for applied constraint versions.
+-- F1: immutable transition ledger. Version is deliberately NOT the primary key:
+-- the same logical version may reappear after an explicit rollback while history
+-- remains preserved. Idempotency is unique per scope.
 CREATE TABLE governance.constraint_versions (
+  transition_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   version text NOT NULL,
   scope text NOT NULL,
   idempotency_key text NOT NULL,
@@ -29,7 +32,6 @@ CREATE TABLE governance.constraint_versions (
   status text NOT NULL,
   source_version text,
   target_version text,
-  CONSTRAINT constraint_versions_pk PRIMARY KEY (scope, version, idempotency_key),
   CONSTRAINT constraint_versions_scope_idempotency_uq UNIQUE (scope, idempotency_key),
   CONSTRAINT constraint_versions_status_ck CHECK (status IN ('ACTIVE','SUPERSEDED','ROLLED_BACK')),
   CONSTRAINT constraint_versions_nonempty_ck CHECK (
@@ -41,8 +43,8 @@ CREATE TABLE governance.constraint_versions (
   )
 );
 
--- F2: controlled test catalog. v1 is the initial state; v2 is the only
--- supported forward transition in this non-production M15 fixture.
+-- F2: controlled test catalog. v1 and v2 are the only applicable versions
+-- in this non-production M15 fixture.
 CREATE TABLE governance.constraint_version_catalog (
   version text PRIMARY KEY,
   scope text NOT NULL,
@@ -122,7 +124,7 @@ BEGIN
   SELECT version INTO v_current
   FROM governance.constraint_versions
   WHERE scope = p_scope AND status = 'ACTIVE'
-  ORDER BY created_at DESC
+  ORDER BY created_at DESC, transition_id DESC
   LIMIT 1
   FOR UPDATE;
 
@@ -134,12 +136,18 @@ BEGIN
     RETURN v_current;
   END IF;
 
-  IF NOT (v_current = 'v1' AND p_version = 'v2') THEN
+  -- Explicit supported transitions for the non-production M15 fixture:
+  -- forward v1->v2 and rollback v2->v1. No implicit jumps are allowed.
+  IF NOT ((v_current = 'v1' AND p_version = 'v2')
+       OR (v_current = 'v2' AND p_version = 'v1')) THEN
     RAISE EXCEPTION 'M15 BLOCKED: unsupported version transition';
   END IF;
 
   UPDATE governance.constraint_versions
-  SET status = 'SUPERSEDED'
+  SET status = CASE
+    WHEN v_current = 'v2' AND p_version = 'v1' THEN 'ROLLED_BACK'
+    ELSE 'SUPERSEDED'
+  END
   WHERE scope = p_scope AND version = v_current AND status = 'ACTIVE';
 
   INSERT INTO governance.constraint_versions
