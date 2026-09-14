@@ -38,10 +38,7 @@ command -v psql >/dev/null 2>&1 || fail "psql is required"
 if [[ "$M15_TEST_DATABASE_URL" =~ (prod|production) ]]; then fail "test database URL looks production-like"; fi
 
 run_sql(){ psql "$M15_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -X -q -c "$1"; }
-
 run_sql "SET paz.m15_nonprod='true'; SET paz.environment='test'; SELECT 1;" >/dev/null
-run_sql "SET paz.m15_nonprod='true'; SET paz.environment='test';" >/dev/null
-# Migration must be executed by the workflow against a disposable database.
 
 run_sql "SELECT ${M15_VERSION_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_VERSION_COLUMN}='v1' AND ${M15_STATUS_COLUMN}='ACTIVE';" | grep -q v1 || fail "T04 current v1 is not readable"
 pass "T04" "current v1 is readable"
@@ -62,13 +59,20 @@ pass "T07" "scope substitution rejected"
 run_sql "SELECT ${M15_PROVENANCE_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_IDEMPOTENCY_COLUMN}='m15-t06-retry';" | grep -q "$PROVENANCE" || fail "T08 provenance missing"
 pass "T08" "provenance is queryable"
 
-run_sql "SELECT ${M15_APPLY_FUNCTION}('v2', '$SCOPE', 'm15-t09-v2', '$PROVENANCE', 'NON_HUMAN_TEST_ACTOR');" >/dev/null
-ACTIVE="$(run_sql "SELECT ${M15_VERSION_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_SCOPE_COLUMN}='$SCOPE' AND ${M15_STATUS_COLUMN}='ACTIVE' ORDER BY created_at DESC LIMIT 1;" | tr -d '[:space:]')"
+run_sql "SELECT ${M15_APPLY_FUNCTION}('v2', '$SCOPE', 'm15-t09-forward', '$PROVENANCE', 'NON_HUMAN_TEST_ACTOR');" >/dev/null
+ACTIVE="$(run_sql "SELECT ${M15_VERSION_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_SCOPE_COLUMN}='$SCOPE' AND ${M15_STATUS_COLUMN}='ACTIVE' ORDER BY created_at DESC, transition_id DESC LIMIT 1;" | tr -d '[:space:]')"
 [[ "$ACTIVE" == "v2" ]] || fail "T09 v1->v2 transition failed"
+
 if run_sql "SELECT ${M15_APPLY_FUNCTION}('v9', '$SCOPE', 'm15-t09-invalid', '$PROVENANCE', 'NON_HUMAN_TEST_ACTOR');" >/dev/null 2>&1; then fail "T09 unsupported transition accepted"; fi
-ACTIVE2="$(run_sql "SELECT ${M15_VERSION_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_SCOPE_COLUMN}='$SCOPE' AND ${M15_STATUS_COLUMN}='ACTIVE' ORDER BY created_at DESC LIMIT 1;" | tr -d '[:space:]')"
+ACTIVE2="$(run_sql "SELECT ${M15_VERSION_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_SCOPE_COLUMN}='$SCOPE' AND ${M15_STATUS_COLUMN}='ACTIVE' ORDER BY created_at DESC, transition_id DESC LIMIT 1;" | tr -d '[:space:]')"
 [[ "$ACTIVE2" == "v2" ]] || fail "T09 failed transition changed active state"
-pass "T09" "transition and failed-transition rollback boundary verified"
+
+run_sql "SELECT ${M15_APPLY_FUNCTION}('v1', '$SCOPE', 'm15-t09-rollback', '$PROVENANCE', 'NON_HUMAN_TEST_ACTOR');" >/dev/null
+ACTIVE3="$(run_sql "SELECT ${M15_VERSION_COLUMN} FROM ${M15_VERSION_TABLE} WHERE ${M15_SCOPE_COLUMN}='$SCOPE' AND ${M15_STATUS_COLUMN}='ACTIVE' ORDER BY created_at DESC, transition_id DESC LIMIT 1;" | tr -d '[:space:]')"
+[[ "$ACTIVE3" == "v1" ]] || fail "T09 explicit rollback failed"
+HISTORY="$(run_sql "SELECT count(*) FROM ${M15_VERSION_TABLE} WHERE ${M15_SCOPE_COLUMN}='$SCOPE' AND ${M15_VERSION_COLUMN} IN ('v1','v2');" | tr -d '[:space:]')"
+[[ "$HISTORY" -ge 3 ]] || fail "T09 transition history was not preserved"
+pass "T09" "forward transition, failed transition, and explicit rollback verified"
 
 for c in version scope idempotency_key provenance_hash created_at created_by status; do
   n="$(run_sql "SELECT is_nullable FROM information_schema.columns WHERE table_schema='governance' AND table_name='constraint_versions' AND column_name='$c';" | tr -d '[:space:]')"
