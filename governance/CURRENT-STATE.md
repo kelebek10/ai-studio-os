@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 2.1  
+**Version:** 2.2  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -25,9 +25,7 @@
 - M11 — Concurrent Retry: PASS
 - M12 — Provenance Strengthening: PASS — independent provenance recomputation, payload tamper detection, chain-hash tamper detection and rollback integrity verified
 - M13 — Candidate Boundary: PASS — authority, bypass, concurrency, provenance integrity and rollback evidence recorded
-
-**Controls requiring execution:**
-- M14 — Approval Authority: NOT EXECUTED
+- M14 — Approval Authority: PASS — database principal/privilege enforcement verified; AI and workflow approval denied; authorized human approval accepted; provenance and stale/duplicate rejection verified
 
 ## M13 Evidence
 
@@ -40,6 +38,19 @@
 - Rollback candidate 2: `APPROVED / version 2` before rollback; `VERIFIED / version 1` after rollback.
 - Final combined raw evidence SHA-256: `220eae739dd01d0369f5feffd5cfaaea7a6aa1d2803b52a438941e7ff700114b`.
 - Governance record: `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`.
+
+## M14 Evidence
+
+- Execution record: `governance/M14-APPROVAL-AUTHORITY-EXECUTION-RECORD-v1.0.md`.
+- Test script: `migrations/nonprod/013_m14_approval_authority.sql`.
+- Environment: disposable non-production PostgreSQL test database `paiforge_pg_test`.
+- T01 PASS: AI principal denied by privilege boundary.
+- T02 PASS: workflow principal denied by privilege boundary.
+- T03 PASS: AI cannot self-assert human approval authority.
+- T04 PASS: authorized human approval principal accepted.
+- T05 PASS: approval state and principal provenance verified.
+- T06 PASS: duplicate/stale approval rejected.
+- Final test output: `M14 AUTHORITY TEST SUITE COMPLETE: T01-T06 PASS`.
 
 ## Authoritative PostgreSQL Artifacts
 
@@ -60,6 +71,8 @@
 - `migrations/nonprod/011_m13_candidate_approval_boundary.sql`
 - `migrations/nonprod/012_m13_authority_concurrency_provenance.sql`
 - `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`
+- `migrations/nonprod/013_m14_approval_authority.sql`
+- `governance/M14-APPROVAL-AUTHORITY-EXECUTION-RECORD-v1.0.md`
 
 ## Migration Preconditions
 
@@ -68,6 +81,7 @@
 3. Human approval authorizes migration design only.
 4. Migration design must preserve Core write authority, tenant isolation, immutability, provenance, concurrency and idempotency.
 5. No production mutation is permitted at this gate.
+6. M14 approval authority is technically enforced by database principal/privilege boundary in the tested non-production control.
 
 ## Design Principles
 
@@ -77,9 +91,10 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Execute M14 — Approval Authority.
-2. Record Migration Design Review PASS/FAIL only after applicable controls pass.
-3. Obtain separate approval before any production migration execution.
+1. Reconcile the AI Consortium architecture with the M14 authority model and adversarial findings from independent Claude/Copilot review.
+2. Define the minimum governance/security controls required before any agent/workflow implementation.
+3. Execute M15 — Constraint Versioning only after the revised consortium control boundary is recorded, if M15 remains the next applicable migration control.
+4. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
 
