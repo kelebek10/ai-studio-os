@@ -48,7 +48,7 @@ GRANT USAGE ON SCHEMA m14_approval_authority TO paiforge_m14_human_approver, pai
 REVOKE ALL ON FUNCTION m14_approval_authority.approve_candidate(bigint,integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION m14_approval_authority.approve_candidate(bigint,integer) TO paiforge_m14_human_approver;
 REVOKE ALL ON TABLE m14_approval_authority.design_candidate FROM PUBLIC;
-GRANT SELECT ON TABLE m14_approval_authority.design_candidate TO paiforge_m14_human_approver;
+GRANT SELECT, UPDATE ON TABLE m14_approval_authority.design_candidate TO paiforge_m14_human_approver;
 
 DO $$
 BEGIN
