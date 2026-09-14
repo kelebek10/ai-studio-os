@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 2.0  
+**Version:** 2.1  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -18,105 +18,48 @@
 - PostgreSQL Blueprint v1.3: CONTROLLED RE-REVIEW PASS
 - PostgreSQL final pre-approval test 001: PASS
 - Human Project Owner approval: APPROVED FOR MIGRATION DESIGN
-- M08 — State Transition: PASS — reproducible disposable PostgreSQL execution evidence recorded
-- M09 — Optimistic Concurrency: PASS — two real parallel PostgreSQL sessions; one update succeeded and the stale-version update affected 0 rows
-- M10 — Event Sequencing: PASS — ordered events, duplicate prevention, gap prevention and rollback integrity verified in disposable PostgreSQL execution
-- M11 — Idempotency Minimum Evidence: PASS — T01–T04 reproducibly executed in disposable PostgreSQL; raw evidence recorded
-- M11 — Concurrent Retry: PASS — prior real parallel-session evidence remains the supporting concurrency evidence
-- M12 — Provenance: PASS — evidence exists; provenance hash/tamper evidence strengthening recommended
+- M08 — State Transition: PASS
+- M09 — Optimistic Concurrency: PASS
+- M10 — Event Sequencing: PASS
+- M11 — Idempotency Minimum Evidence: PASS
+- M11 — Concurrent Retry: PASS
+- M12 — Provenance Strengthening: PASS — independent provenance recomputation, payload tamper detection, chain-hash tamper detection and rollback integrity verified
+- M13 — Candidate Boundary: PASS — authority, bypass, concurrency, provenance integrity and rollback evidence recorded
 
-**Controls requiring evidence rework / re-verification:**
-- M13 — Candidate Boundary: UNVERIFIED — prior PASS evidence is insufficient to establish DB-level bypass resistance and authority integrity
+**Controls requiring execution:**
 - M14 — Approval Authority: NOT EXECUTED
 
-**M08 disposable execution evidence:**
-- Controlled `CANDIDATE → VERIFIED`: accepted with `HUMAN_REVIEWER`
-- Invalid `CANDIDATE → APPROVED`: rejected
-- Direct `UPDATE` state bypass: rejected by DB trigger
-- Unauthorized `AI` actor: rejected by DB authority rule
-- Final state after rollback-scoped tests: `CANDIDATE / version 1 / SYSTEM`
-- Test environment: disposable PostgreSQL 16 container `paiforge-m08-consortium-postgres`
-- Production data and production credentials were not used
-- Raw execution evidence SHA-256: `f69ab7527f1a1f8de1ff6c378735c1f92e5667fdcec78d3d1836c6d12938b63f`
-- Governance record: `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md`
+## M13 Evidence
 
-**M09 disposable execution evidence:**
-- Two separate PostgreSQL sessions executed in parallel.
-- Both sessions read `version=1` before the conditional update.
-- Session A: `update_design = 1` and COMMIT.
-- Session B: `update_design = 0` because the expected version was stale.
-- Final state: `VERIFIED_A / version 2 / SESSION_A`.
-- Test environment: disposable PostgreSQL 16 container `paiforge-m09-consortium-postgres`.
-- Production data and production credentials were not used.
-- Governance record: `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md`.
-
-**M10 disposable execution evidence:**
-- Ordered events: `1 CREATE → 2 UPDATE → 3 APPROVE`
-- Duplicate sequence `3` rejected; database expected `4`.
-- Gap sequence `5` rejected; database expected `4`.
-- Transactional sequence `4 / TEMP_EVENT` visible inside transaction and absent after `ROLLBACK`.
-- Final event chain remained `1 CREATE → 2 UPDATE → 3 APPROVE`.
-- Final `last_sequence = 3`.
-- Test environment: disposable PostgreSQL 16 container `paiforge-m10-consortium-postgres`.
-- Production data and production credentials were not used.
-- Governance record: `governance/M10-EVENT-SEQUENCING-EXECUTION-RECORD-v1.0.md`.
-
-**M11 disposable execution evidence:**
-- T01 exact replay: no duplicate effect; canonical row count `1`.
-- T02 conflicting replay: rejected; canonical payload preserved.
-- T03 canonical identity integrity: identity and payload hash unchanged.
-- T04 rollback + retry: rollback removed the effect; retry created exactly one effect.
-- Final `canonical_effect_count = 1`.
-- Final `rollback_retry_effect_count = 1`.
-- Test environment: disposable PostgreSQL 16 container `paiforge-m11-postgres`, database `paiforge_m11`.
-- Production data and production credentials were not used.
-- SQL SHA-256: `77d36e7aa088ecd45478dda4100c391914b0f061b628ad0a9be4be499893aacc`.
-- Raw execution evidence SHA-256: `e5d0740c37a0199f3028ed65fd7b0a3578645c3c7f3c7e49b760134959988f5f`.
-- Governance record: `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE-EXECUTION-RECORD-v1.0.md`.
-- Concurrent Retry remains supported by the previously recorded real parallel-session evidence; the T01–T04 run does not claim a new concurrency test.
-
-**M12 disposable execution evidence:**
-- Valid source reference accepted
-- Valid predecessor chain accepted
-- Missing predecessor correctly rejected by foreign-key enforcement
-- Provenance chain preserved (`provenance_records = 2`, `chained_records = 1`)
-- Test environment: disposable PostgreSQL test transaction
-- Production data and production credentials were not used
-
-**M13 evidence status:**
-- Existing six-check record remains historical evidence only.
-- Current governance status is UNVERIFIED pending independent DB-level authority, bypass, concurrency, rollback and provenance-integrity evidence.
-
-**Current gate:** PostgreSQL Migration Design
-
-**Next control:** M12 — Provenance evidence strengthening
-
-**Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
-
-## Repository State
-
-- Repository: `kelebek10/ai-studio-os`
-- Active branch: `phase-1-3-foundation`
-- Protected baseline branch: `main`
-- `main` remains untouched.
-- M10 execution record commit: `3fc7fadb60340a1bc52e32e092f57d9ae60efece`.
-- M11 minimum evidence execution record commit: `efa1485c1ad7f32f4e4ebc309d22796ae5e376a6`.
-- CURRENT-STATE v2.0 records M11 minimum evidence strengthening as PASS.
+- Six-check candidate boundary pilot: PASS.
+- Independent provenance recomputation: PASS.
+- Controlled payload and chain tamper detection: PASS.
+- Two-session optimistic concurrency: Session A succeeded; stale Session B returned 0.
+- Final candidate 1: `APPROVED / HUMAN_REVIEWER / version 2`.
+- Final provenance: `valid=true`.
+- Rollback candidate 2: `APPROVED / version 2` before rollback; `VERIFIED / version 1` after rollback.
+- Final combined raw evidence SHA-256: `220eae739dd01d0369f5feffd5cfaaea7a6aa1d2803b52a438941e7ff700114b`.
+- Governance record: `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`.
 
 ## Authoritative PostgreSQL Artifacts
 
-- `governance/POSTGRESQL-SCHEMA-BLUEPRINT-v1.3.md` — controlled re-review PASS
-- `governance/POSTGRESQL-SCHEMA-REVIEW-v1.3.md` — PASS
-- `governance/POSTGRESQL-SCHEMA-REVIEW-TEST-001.md` — PASS
-- `governance/POSTGRESQL-SCHEMA-APPROVAL-v1.0.md` — human approval for migration design
-- `governance/POSTGRESQL-MIGRATION-DESIGN-PLAN-v1.0.md` — design plan
-- `governance/POSTGRESQL-MIGRATION-TEST-MATRIX-v1.0.md` — migration test matrix
-- `governance/POSTGRESQL-MIGRATION-SQL-SKELETON-v1.0.md` — non-executable SQL structure
-- `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md` — M08 reproducible execution evidence
-- `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md` — M09 reproducible parallel-session evidence
-- `governance/M10-EVENT-SEQUENCING-EXECUTION-RECORD-v1.0.md` — M10 reproducible event-sequencing evidence
-- `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE.sql` — reproducible minimum evidence harness
-- `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE-EXECUTION-RECORD-v1.0.md` — M11 minimum evidence PASS record
+- `governance/POSTGRESQL-SCHEMA-BLUEPRINT-v1.3.md`
+- `governance/POSTGRESQL-SCHEMA-REVIEW-v1.3.md`
+- `governance/POSTGRESQL-SCHEMA-REVIEW-TEST-001.md`
+- `governance/POSTGRESQL-SCHEMA-APPROVAL-v1.0.md`
+- `governance/POSTGRESQL-MIGRATION-DESIGN-PLAN-v1.0.md`
+- `governance/POSTGRESQL-MIGRATION-TEST-MATRIX-v1.0.md`
+- `governance/POSTGRESQL-MIGRATION-SQL-SKELETON-v1.0.md`
+- `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md`
+- `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md`
+- `governance/M10-EVENT-SEQUENCING-EXECUTION-RECORD-v1.0.md`
+- `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE.sql`
+- `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE-EXECUTION-RECORD-v1.0.md`
+- `migrations/nonprod/010_m12_provenance_strengthening.sql`
+- `governance/M12-PROVENANCE-STRENGTHENING-EXECUTION-RECORD-v1.0.md`
+- `migrations/nonprod/011_m13_candidate_approval_boundary.sql`
+- `migrations/nonprod/012_m13_authority_concurrency_provenance.sql`
+- `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`
 
 ## Migration Preconditions
 
@@ -134,14 +77,14 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Strengthen M12 with independent provenance hash/tamper evidence.
-2. Rework M13 with independent DB-level authority/bypass, concurrency, rollback and provenance-integrity tests.
-3. Execute M14 — Approval Authority only after preceding controls are adequately evidenced.
-4. Record Migration Design Review PASS/FAIL only after applicable controls pass.
-5. Obtain separate approval before any production migration execution.
+1. Execute M14 — Approval Authority.
+2. Record Migration Design Review PASS/FAIL only after applicable controls pass.
+3. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
 
 Any unresolved security, integrity, authority, concurrency, idempotency, provenance or rollback failure blocks migration progression.
+
+**Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
 
 **Source of Truth Rule:** Versioned repository governance records are the durable project control layer. Conversational context is not the sole authority.
