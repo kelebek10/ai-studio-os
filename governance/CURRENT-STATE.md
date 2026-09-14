@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.8  
+**Version:** 1.9  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -20,12 +20,12 @@
 - Human Project Owner approval: APPROVED FOR MIGRATION DESIGN
 - M08 — State Transition: PASS — reproducible disposable PostgreSQL execution evidence recorded
 - M09 — Optimistic Concurrency: PASS — two real parallel PostgreSQL sessions; one update succeeded and the stale-version update affected 0 rows
+- M10 — Event Sequencing: PASS — ordered events, duplicate prevention, gap prevention and rollback integrity verified in disposable PostgreSQL execution
 - M11 — Idempotency: PASS — evidence exists; further raw-evidence strengthening recommended
 - M11 — Concurrent Retry: PASS — evidence exists; real parallel-session evidence strengthening recommended
 - M12 — Provenance: PASS — evidence exists; provenance hash/tamper evidence strengthening recommended
 
 **Controls requiring evidence rework / re-verification:**
-- M10 — Event Sequencing: UNVERIFIED — prior PASS lacked sufficient execution evidence
 - M13 — Candidate Boundary: UNVERIFIED — prior PASS evidence is insufficient to establish DB-level bypass resistance and authority integrity
 - M14 — Approval Authority: NOT EXECUTED
 
@@ -50,12 +50,23 @@
 - Production data and production credentials were not used.
 - Governance record: `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md`.
 
+**M10 disposable execution evidence:**
+- Ordered events: `1 CREATE → 2 UPDATE → 3 APPROVE`
+- Duplicate sequence `3` rejected; database expected `4`.
+- Gap sequence `5` rejected; database expected `4`.
+- Transactional sequence `4 / TEMP_EVENT` visible inside transaction and absent after `ROLLBACK`.
+- Final event chain remained `1 CREATE → 2 UPDATE → 3 APPROVE`.
+- Final `last_sequence = 3`.
+- Test environment: disposable PostgreSQL 16 container `paiforge-m10-consortium-postgres`.
+- Production data and production credentials were not used.
+- Governance record: `governance/M10-EVENT-SEQUENCING-EXECUTION-RECORD-v1.0.md`.
+
 **M11 disposable execution evidence:**
 - Exact replay: no duplicate effect (`INSERT 0 0`)
 - Conflicting replay: rejected
 - Canonical identity preserved (`HASH-A`)
 - Concurrent retry: no duplicate effect (`effect_count = 1`)
-- Test environment: disposable PostgreSQL 16 container `paiforge-m11-postgres`
+- Test environment: disposable PostgreSQL test container
 - Production data and production credentials were not used
 
 **M12 disposable execution evidence:**
@@ -72,7 +83,7 @@
 
 **Current gate:** PostgreSQL Migration Design
 
-**Next control:** M10 — Event Sequencing (evidence re-verification)
+**Next control:** M13 — Candidate Boundary (independent DB-level evidence rework)
 
 **Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
 
@@ -82,7 +93,8 @@
 - Active branch: `phase-1-3-foundation`
 - Protected baseline branch: `main`
 - `main` remains untouched.
-- Latest governance commits: M09 execution record `c8d94891d924c42628b2efd23d63fbe25364294d`; CURRENT-STATE v1.8 recorded immediately after.
+- M10 execution record commit: `3fc7fadb60340a1bc52e32e092f57d9ae60efece`.
+- CURRENT-STATE v1.9 records M10 PASS after reproducible disposable execution.
 
 ## Authoritative PostgreSQL Artifacts
 
@@ -95,6 +107,7 @@
 - `governance/POSTGRESQL-MIGRATION-SQL-SKELETON-v1.0.md` — non-executable SQL structure
 - `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md` — M08 reproducible execution evidence
 - `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md` — M09 reproducible parallel-session evidence
+- `governance/M10-EVENT-SEQUENCING-EXECUTION-RECORD-v1.0.md` — M10 reproducible event-sequencing evidence
 
 ## Migration Preconditions
 
@@ -112,12 +125,11 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Re-verify M10 — Event Sequencing with reproducible execution evidence.
-2. Strengthen M11/M12 evidence where noted.
-3. Rework M13 with independent DB-level authority/bypass, concurrency, rollback and provenance-integrity tests.
-4. Execute M14 — Approval Authority only after preceding controls are adequately evidenced.
-5. Record Migration Design Review PASS/FAIL only after applicable controls pass.
-6. Obtain separate approval before any production migration execution.
+1. Rework M13 with independent DB-level authority/bypass, concurrency, rollback and provenance-integrity tests.
+2. Execute M14 — Approval Authority only after preceding controls are adequately evidenced.
+3. Strengthen M11/M12 evidence where noted.
+4. Record Migration Design Review PASS/FAIL only after applicable controls pass.
+5. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
 
