@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 1.7  
+**Version:** 1.8  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -19,12 +19,12 @@
 - PostgreSQL final pre-approval test 001: PASS
 - Human Project Owner approval: APPROVED FOR MIGRATION DESIGN
 - M08 — State Transition: PASS — reproducible disposable PostgreSQL execution evidence recorded
+- M09 — Optimistic Concurrency: PASS — two real parallel PostgreSQL sessions; one update succeeded and the stale-version update affected 0 rows
 - M11 — Idempotency: PASS — evidence exists; further raw-evidence strengthening recommended
 - M11 — Concurrent Retry: PASS — evidence exists; real parallel-session evidence strengthening recommended
 - M12 — Provenance: PASS — evidence exists; provenance hash/tamper evidence strengthening recommended
 
 **Controls requiring evidence rework / re-verification:**
-- M09 — Optimistic Concurrency: UNVERIFIED — prior PASS lacked sufficient execution evidence
 - M10 — Event Sequencing: UNVERIFIED — prior PASS lacked sufficient execution evidence
 - M13 — Candidate Boundary: UNVERIFIED — prior PASS evidence is insufficient to establish DB-level bypass resistance and authority integrity
 - M14 — Approval Authority: NOT EXECUTED
@@ -39,6 +39,16 @@
 - Production data and production credentials were not used
 - Raw execution evidence SHA-256: `f69ab7527f1a1f8de1ff6c378735c1f92e5667fdcec78d3d1836c6d12938b63f`
 - Governance record: `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md`
+
+**M09 disposable execution evidence:**
+- Two separate PostgreSQL sessions executed in parallel.
+- Both sessions read `version=1` before the conditional update.
+- Session A: `update_design = 1` and COMMIT.
+- Session B: `update_design = 0` because the expected version was stale.
+- Final state: `VERIFIED_A / version 2 / SESSION_A`.
+- Test environment: disposable PostgreSQL 16 container `paiforge-m09-consortium-postgres`.
+- Production data and production credentials were not used.
+- Governance record: `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md`.
 
 **M11 disposable execution evidence:**
 - Exact replay: no duplicate effect (`INSERT 0 0`)
@@ -62,7 +72,7 @@
 
 **Current gate:** PostgreSQL Migration Design
 
-**Next control:** M09 — Optimistic Concurrency (evidence re-verification)
+**Next control:** M10 — Event Sequencing (evidence re-verification)
 
 **Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
 
@@ -72,7 +82,7 @@
 - Active branch: `phase-1-3-foundation`
 - Protected baseline branch: `main`
 - `main` remains untouched.
-- Latest governance commits: M08 execution record `3896509f4b258b7c3905f376bd61600e2681f148`; CURRENT-STATE v1.7 recorded immediately after.
+- Latest governance commits: M09 execution record `c8d94891d924c42628b2efd23d63fbe25364294d`; CURRENT-STATE v1.8 recorded immediately after.
 
 ## Authoritative PostgreSQL Artifacts
 
@@ -84,6 +94,7 @@
 - `governance/POSTGRESQL-MIGRATION-TEST-MATRIX-v1.0.md` — migration test matrix
 - `governance/POSTGRESQL-MIGRATION-SQL-SKELETON-v1.0.md` — non-executable SQL structure
 - `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md` — M08 reproducible execution evidence
+- `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md` — M09 reproducible parallel-session evidence
 
 ## Migration Preconditions
 
@@ -101,13 +112,12 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 ## Immediate Next Actions
 
-1. Re-verify M09 — Optimistic Concurrency with reproducible disposable PostgreSQL execution evidence.
-2. Re-verify M10 — Event Sequencing with reproducible execution evidence.
-3. Strengthen M11/M12 evidence where noted.
-4. Rework M13 with independent DB-level authority/bypass, concurrency, rollback and provenance-integrity tests.
-5. Execute M14 — Approval Authority only after preceding controls are adequately evidenced.
-6. Record Migration Design Review PASS/FAIL only after applicable controls pass.
-7. Obtain separate approval before any production migration execution.
+1. Re-verify M10 — Event Sequencing with reproducible execution evidence.
+2. Strengthen M11/M12 evidence where noted.
+3. Rework M13 with independent DB-level authority/bypass, concurrency, rollback and provenance-integrity tests.
+4. Execute M14 — Approval Authority only after preceding controls are adequately evidenced.
+5. Record Migration Design Review PASS/FAIL only after applicable controls pass.
+6. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
 
