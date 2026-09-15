@@ -12,11 +12,11 @@ services:
     cap_drop:
       - ALL
     environment:
-      PG_HOST: ${PG_HOST:?PG_HOST is required}
+      PG_HOST: peyzaj_postgres
       PG_PORT: ${PG_PORT:-5432}
-      PG_DB: ${PG_DB:?PG_DB is required}
-      PG_USER: ${PG_USER:?PG_USER is required}
-      PG_PASSWORD: ${PG_PASSWORD:?PG_PASSWORD is required}
+      PG_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      PG_USER: ${RUNNER_DB_USER:?RUNNER_DB_USER is required}
+      PG_PASSWORD: ${RUNNER_DB_PASSWORD:?RUNNER_DB_PASSWORD is required}
     networks:
       - peyzaj_net
 
