@@ -1,12 +1,12 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 2.2  
+**Version:** 2.3  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
 **Location:** `governance/CURRENT-STATE.md`  
-**Last Updated:** 2026-09-14
+**Last Updated:** 2026-09-15
 
 ## Current Phase
 
@@ -26,6 +26,26 @@
 - M12 — Provenance Strengthening: PASS — independent provenance recomputation, payload tamper detection, chain-hash tamper detection and rollback integrity verified
 - M13 — Candidate Boundary: PASS — authority, bypass, concurrency, provenance integrity and rollback evidence recorded
 - M14 — Approval Authority: PASS — database principal/privilege enforcement verified; AI and workflow approval denied; authorized human approval accepted; provenance and stale/duplicate rejection verified
+- M15 Stage 1 — Controlled Readiness Runtime Gate: PASS — O1/O2/O3/O4/O5 real runtime evidence verified
+
+## M15 Stage 1 Evidence
+
+- Evidence checkpoint commit: `79bccfed9519ddcfcb32069a5f15008d75c4bad8`.
+- Canonical Control Agent source synchronized from `phase-1-3-foundation`.
+- Canonical image: `paiforge-control-agent:canonical-20260915`.
+- Immutable image digest verified: `sha256:76a480d27506b6fb6c6dd0dccd3ed89e9ed9ff17ac846cedbd33f5e82ff2395a`.
+- Image platform: `linux/arm64`.
+- Runtime health: `healthy`; runtime status `running`; restart count `0`.
+- O1 REAL: PASS — database observation completed in `MODE=READ_ONLY`.
+- O2 REAL: PASS — missing evidence produced `BLOCKED / MISSING_EVIDENCE`.
+- O3 REAL: PASS — unknown task state produced `UNKNOWN / UNKNOWN_STATE`.
+- O4 REAL: PASS — mutation attempt denied by PostgreSQL schema privilege boundary.
+- O5 REAL: PASS — repeated valid observations produced identical deterministic fingerprint.
+- Runner principal: `paiforge_runner_ro`; LOGIN enabled; SUPERUSER/CREATEDB/CREATEROLE disabled.
+- Runner database privileges: CONNECT and schema USAGE allowed; database CREATE, TEMP and schema CREATE denied.
+- Credential rotation completed after a credential exposure event; new credential verified against PostgreSQL and retained only server-side.
+- Legacy runtime retained under rollback name; canonical runtime cutover completed without deleting the legacy container.
+- No production migration, production SQL execution or data import was performed as part of this gate.
 
 ## M13 Evidence
 
@@ -73,6 +93,7 @@
 - `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`
 - `migrations/nonprod/013_m14_approval_authority.sql`
 - `governance/M14-APPROVAL-AUTHORITY-EXECUTION-RECORD-v1.0.md`
+- `governance/M15-STAGE1-CONTROLLED-READINESS-EVIDENCE-v1.0.md`
 
 ## Migration Preconditions
 
@@ -82,6 +103,7 @@
 4. Migration design must preserve Core write authority, tenant isolation, immutability, provenance, concurrency and idempotency.
 5. No production mutation is permitted at this gate.
 6. M14 approval authority is technically enforced by database principal/privilege boundary in the tested non-production control.
+7. M15 Stage 1 runtime readiness is PASS; subsequent M15 progression still requires its own controlled evidence and applicable approval gate.
 
 ## Design Principles
 
@@ -93,7 +115,7 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 1. Reconcile the AI Consortium architecture with the M14 authority model and adversarial findings from independent Claude/Copilot review.
 2. Define the minimum governance/security controls required before any agent/workflow implementation.
-3. Execute M15 — Constraint Versioning only after the revised consortium control boundary is recorded, if M15 remains the next applicable migration control.
+3. Continue M15 only through the next explicitly defined controlled stage and its evidence gate; do not infer completion from Stage 1.
 4. Obtain separate approval before any production migration execution.
 
 ## Stop Conditions
