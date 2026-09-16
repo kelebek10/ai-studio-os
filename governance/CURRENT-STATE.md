@@ -1,16 +1,16 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 2.3  
+**Version:** 2.4  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
 **Location:** `governance/CURRENT-STATE.md`  
-**Last Updated:** 2026-09-15
+**Last Updated:** 2026-09-16
 
 ## Current Phase
 
-**Phase:** Phase 1–3 Foundation — PostgreSQL Migration Design
+**Phase:** Phase 1–3 Foundation — M15 Controlled Agent Runtime / Human Authorization Security Design
 
 **Completed gates:**
 - ADIM 1 — Repository & Governance Audit: GO
@@ -72,6 +72,52 @@
 - T06 PASS: duplicate/stale approval rejected.
 - Final test output: `M14 AUTHORITY TEST SUITE COMPLETE: T01-T06 PASS`.
 
+## M15-A — Human Authorization Security Design
+
+**Status: BLOCKED / DESIGN-AND-TEST GATE — NOT IMPLEMENTED**
+
+The three independent adversarial reviews (Claude, Gemini and Copilot) identified a common need to strengthen the human authorization boundary before agent/workflow implementation and production mutation. Their findings are treated as design input; no AI verdict itself constitutes project approval.
+
+### Pinned design decision
+
+- Primary daily human authorization: **Passkey / WebAuthn**.
+- Recovery: separate controlled recovery credential; PUK-like high-entropy recovery code is a candidate UX mechanism, not an unrestricted master key.
+- Separate signing key remains an implementation alternative for recovery/break-glass and must be evaluated before final implementation.
+- Telegram remains notification/communication only and is not an approval authority.
+- NVIDIA remains an optional compute adapter and cannot become a Core mutation authority.
+- GitHub review/approval is repository governance and does not by itself constitute the PAI-FORGE cryptographic Human Authorization Protocol.
+- AI consensus is evidence/analysis only and cannot constitute human approval.
+
+### Authorization payload baseline
+
+`authorization_id + task_id + correlation_id + commit_sha + artifact_digest + action + nonce + issued_at + expires_at + human_identity + authorization_method`
+
+### Authorization state machine
+
+`ISSUED -> ACTIVE -> USED | EXPIRED | REVOKED`
+
+Terminal states cannot return to ACTIVE. Nonce consumption must be atomic. Reuse/replay must be BLOCKED.
+
+### Mandatory fail-closed conditions
+
+Identity failure, scope mismatch, commit/artifact mismatch, invalid credential/signature, nonce replay, expiry, revocation, missing evidence, provenance mismatch, authority conflict, FAIL, UNKNOWN or TIMEOUT all map to **BLOCKED**.
+
+### M15-A minimum acceptance criteria
+
+AUTH-01 through AUTH-10 must all be proven by deterministic non-production runtime evidence and independent review. The detailed adversarial test contract is pinned in:
+
+`governance/M15-A-HUMAN-AUTHORIZATION-ADVERSARIAL-TEST-MATRIX-v1.0.md`
+
+### Additional adversarial coverage
+
+ADV-01 through ADV-20 cover action/correlation tampering, payload tampering, expiry manipulation, conflict-round/task-ID bypass, agent/orchestrator/reviewer self-authorization, concurrent replay, artifact/provenance mismatch, missing evidence, FAIL/UNKNOWN promotion, rollback bypass, Telegram-as-authority, AI consensus-as-authority, workflow bypass and unsafe recovery.
+
+### Pinned M15-A documents
+
+- `governance/M15-A-HUMAN-AUTHORIZATION-THREAT-MODEL-v1.0.md`
+- `governance/M15-A-HUMAN-AUTHORIZATION-ADVERSARIAL-TEST-MATRIX-v1.0.md`
+- `governance/M15-A-AUTHORIZATION-PROTOCOL-DESIGN-v1.0.md`
+
 ## Authoritative PostgreSQL Artifacts
 
 - `governance/POSTGRESQL-SCHEMA-BLUEPRINT-v1.3.md`
@@ -103,7 +149,8 @@
 4. Migration design must preserve Core write authority, tenant isolation, immutability, provenance, concurrency and idempotency.
 5. No production mutation is permitted at this gate.
 6. M14 approval authority is technically enforced by database principal/privilege boundary in the tested non-production control.
-7. M15 Stage 1 runtime readiness is PASS; subsequent M15 progression still requires its own controlled evidence and applicable approval gate.
+7. M15 Stage 1 runtime readiness is PASS; subsequent M15 progression requires its own controlled evidence and applicable approval gate.
+8. M15-A Human Authorization is not yet proven; no production authorization path may be inferred from M14 database approval tests.
 
 ## Design Principles
 
@@ -111,17 +158,22 @@ Structured-first → Semantic-second → LLM-last.
 
 PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not directly mutate Core. n8n remains outside the Core write boundary.
 
+Human authority is a separate control plane from AI reasoning and repository automation.
+
 ## Immediate Next Actions
 
-1. Reconcile the AI Consortium architecture with the M14 authority model and adversarial findings from independent Claude/Copilot review.
-2. Define the minimum governance/security controls required before any agent/workflow implementation.
-3. Continue M15 only through the next explicitly defined controlled stage and its evidence gate; do not infer completion from Stage 1.
-4. Obtain separate approval before any production migration execution.
+1. Freeze M15-A threat model, authorization payload, state machine and adversarial test contract.
+2. Design the implementation contract: verification boundary, identity model, nonce/expiry/revocation/replay controls, recovery, and evidence schema.
+3. Implement and test only in controlled non-production scope.
+4. Obtain independent review and explicit Human Project Owner acceptance before progressing.
+5. Do not enable production deployment/mutation, Telegram approval or NVIDIA Core mutation.
 
 ## Stop Conditions
 
-Any unresolved security, integrity, authority, concurrency, idempotency, provenance or rollback failure blocks migration progression.
+Any unresolved security, integrity, authority, concurrency, idempotency, provenance or rollback failure blocks progression.
 
-**Production migration, production SQL execution, data import and infrastructure mutation remain BLOCKED.**
+**Production migration, production SQL execution, data import, production deployment promotion and infrastructure mutation remain BLOCKED.**
+
+**M15-A remains BLOCKED until AUTH-01..AUTH-10 and ADV-01..ADV-20 are executed with verifiable evidence and independently reviewed.**
 
 **Source of Truth Rule:** Versioned repository governance records are the durable project control layer. Conversational context is not the sole authority.
