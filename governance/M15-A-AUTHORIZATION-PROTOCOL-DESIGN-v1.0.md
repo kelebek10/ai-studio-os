@@ -23,7 +23,7 @@ Human authorization is outside the authority of:
 
 - Supervisor
 - Orchestrator
-- Control agent
+- Control
 - Architect
 - Researcher
 - Implementer
@@ -35,6 +35,8 @@ Human authorization is outside the authority of:
 - GitHub workflow automation
 
 Those components may prepare, validate or route evidence, but none can manufacture human authority.
+
+**Control clarification:** Control is a deterministic policy-enforcement component, not an AI agent. Its authorization decisions MUST NOT depend on LLM output, model confidence, AI consensus, prompt interpretation or mutable natural-language instructions. The detailed contract is pinned in `governance/M15-A-CONTROL-DETERMINISM-CONTRACT-v1.0.md`.
 
 ## 3. Daily Authorization Flow
 
@@ -51,8 +53,7 @@ Human Project Owner
 Fresh challenge / nonce
        |
        v
-Authorization payload
-(task + commit + artifact + action)
+Human-readable action summary + authorization payload
        |
        v
 Deterministic verification gate
@@ -60,6 +61,10 @@ Deterministic verification gate
        v
 Authorized operation
 ```
+
+The authorization UI MUST present, before the human confirmation step, the security-relevant action and binding context in human-readable form. At minimum this includes action, target, task/correlation identity, commit identity, artifact digest or digest summary where applicable, expiry, and affected resource/diff summary where applicable.
+
+A cryptographic signature without an understandable action presentation is insufficient for a critical authorization. Any mismatch between the displayed authorization summary and the executed action MUST produce BLOCKED.
 
 The user should not need to remember or type a PAI-FORGE master password for every authorization. Device biometric/PIN may unlock the passkey locally.
 
@@ -75,6 +80,9 @@ Controlled recovery authentication
 Recovery credential verification
         |
         v
+Mandatory recovery delay / notification window
+        |
+        v
 Revoke affected old credential(s)
         |
         v
@@ -88,6 +96,10 @@ Return to normal authorization
 ```
 
 Recovery must not directly grant unrestricted production mutation authority.
+
+Recovery credentials must be high-entropy, single-use or deterministically rotated after use, replay-protected and auditable. A recovery event must trigger a controlled notification through a separate communication channel. Telegram may serve notification only; it is not the approval authority.
+
+Final implementation must define the recovery delay, cancellation semantics, second-factor requirements, credential rotation and atomicity before M15-A READY.
 
 Recovery UX details belong to the Settings layer and are intentionally not implemented in M15-A.
 
@@ -226,7 +238,8 @@ Before an authorization can open a protected operation, the verification layer m
 7. commit binding;
 8. artifact digest binding;
 9. action binding;
-10. required evidence and governance checks.
+10. required evidence and governance checks;
+11. displayed action summary binding where a human-readable confirmation is required.
 
 Failure of any required check => BLOCKED.
 
@@ -286,6 +299,8 @@ M15-A implementation cannot start beyond controlled non-production scaffolding u
 - verification boundary;
 - state transition authority;
 - evidence schema;
+- deterministic Control contract;
+- human-readable action presentation contract;
 - adversarial test contract.
 
 The adversarial test contract is pinned separately in:
@@ -299,7 +314,8 @@ M15-A becomes READY only after:
 1. deterministic implementation exists in non-production;
 2. AUTH-01..AUTH-10 pass with runtime evidence;
 3. ADV-01..ADV-20 produce the required outcomes;
-4. evidence integrity is verified;
-5. independent review passes;
-6. no unresolved P0/P1 authority or integrity issue remains;
-7. Human Project Owner explicitly accepts the gate.
+4. P0-1 through P0-4 are closed with evidence;
+5. evidence integrity is verified;
+6. independent review passes;
+7. no unresolved P0/P1 authority or integrity issue remains;
+8. Human Project Owner explicitly accepts the gate.
