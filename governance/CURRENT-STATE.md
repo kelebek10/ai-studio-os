@@ -1,16 +1,16 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 2.4  
+**Version:** 2.5  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
 **Location:** `governance/CURRENT-STATE.md`  
-**Last Updated:** 2026-09-16
+**Last Updated:** 2026-09-17
 
 ## Current Phase
 
-**Phase:** Phase 1–3 Foundation — M15 Controlled Agent Runtime / Human Authorization Security Design
+**Phase:** Phase 1–3 Foundation — M15-A Human Authorization Security / Deterministic Control Boundary
 
 **Completed gates:**
 - ADIM 1 — Repository & Governance Audit: GO
@@ -27,6 +27,52 @@
 - M13 — Candidate Boundary: PASS — authority, bypass, concurrency, provenance integrity and rollback evidence recorded
 - M14 — Approval Authority: PASS — database principal/privilege enforcement verified; AI and workflow approval denied; authorized human approval accepted; provenance and stale/duplicate rejection verified
 - M15 Stage 1 — Controlled Readiness Runtime Gate: PASS — O1/O2/O3/O4/O5 real runtime evidence verified
+
+## M15-A — Current Gate
+
+**Status: BLOCKED / DESIGN-AND-TEST GATE — NOT READY**
+
+Independent adversarial review returned **PASS WITH CHANGES** and identified four P0 items plus P1/P2 hardening requirements. These findings are now incorporated into the controlled design baseline.
+
+### P0 requirements now pinned
+
+- **P0-1 Blind Signing / WYSIWYS:** critical authorization must present a human-readable action/target/binding summary before confirmation; displayed summary and executed action must be cryptographically/structurally bound; mismatch => BLOCKED.
+- **P0-2 Prompt Injection:** untrusted PR/issue/commit/external content is data only; it cannot modify policy, scope, authority or permissions; adversarial injection must be tested.
+- **P0-3 Deterministic Control:** Control is a non-AI deterministic policy-enforcement component. LLM output, AI consensus, model confidence and prompt interpretation cannot be authorization dependencies. Contract pinned in `governance/M15-A-CONTROL-DETERMINISM-CONTRACT-v1.0.md`.
+- **P0-4 Recovery Security:** recovery cannot be an unrestricted static master key; final implementation must enforce replay protection, rotation/single-use semantics, controlled delay/notification and defined second-factor/cancellation semantics.
+
+### P1 requirements
+
+- **P1-1 Supervisor stop authority:** stop/DoS capability must be explicitly scoped, logged and independently reviewable.
+- **P1-2 Core network isolation:** Core/PostgreSQL/Redis must be technically isolated from direct external access; exact network/firewall/SSH/reverse-proxy boundaries must be documented and tested.
+- **P1-3 Supply-chain/branch bypass:** repository governance must prevent administrator/automation bypass of required security controls within supported GitHub capabilities.
+- **P1-4 AI mock drift:** isolated periodic shadow tests may be used to detect real-provider behavior drift without making AI APIs an authorization dependency.
+- **P1-5 Conflict lineage:** new task/correlation IDs must not reset conflict rounds for the same logical request; lineage/hash enforcement must be deterministic.
+
+### P2 hardening
+
+- Evidence tamper-evidence/hash-chain requirements.
+- Artifact signing and provenance (e.g. Sigstore/cosign) where appropriate.
+- NVIDIA adapter filesystem/secret isolation evidence.
+- Self-hosted ARM64 runner security, if such a runner is later introduced.
+
+## M15-A P0-3 — Deterministic Control Contract
+
+**Status: OPEN — DESIGN PINNED / IMPLEMENTATION NOT YET PROVEN**
+
+Pinned contract:
+
+`governance/M15-A-CONTROL-DETERMINISM-CONTRACT-v1.0.md`
+
+Required tests:
+
+- CTRL-01 — deterministic repeated evaluation/fingerprint
+- CTRL-02 — AI output substitution has no authority
+- CTRL-03 — UNKNOWN/FAIL/missing/timeout fail closed
+- CTRL-04 — controlled runtime reproducibility
+- CTRL-05 — deterministic Control does not bypass independent mutation boundary
+
+P0-3 cannot be marked PASS from documentation alone. Real non-production runtime evidence and independent review are required.
 
 ## M15 Stage 1 Evidence
 
@@ -47,18 +93,6 @@
 - Legacy runtime retained under rollback name; canonical runtime cutover completed without deleting the legacy container.
 - No production migration, production SQL execution or data import was performed as part of this gate.
 
-## M13 Evidence
-
-- Six-check candidate boundary pilot: PASS.
-- Independent provenance recomputation: PASS.
-- Controlled payload and chain tamper detection: PASS.
-- Two-session optimistic concurrency: Session A succeeded; stale Session B returned 0.
-- Final candidate 1: `APPROVED / HUMAN_REVIEWER / version 2`.
-- Final provenance: `valid=true`.
-- Rollback candidate 2: `APPROVED / version 2` before rollback; `VERIFIED / version 1` after rollback.
-- Final combined raw evidence SHA-256: `220eae739dd01d0369f5feffd5cfaaea7a6aa1d2803b52a438941e7ff700114b`.
-- Governance record: `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`.
-
 ## M14 Evidence
 
 - Execution record: `governance/M14-APPROVAL-AUTHORITY-EXECUTION-RECORD-v1.0.md`.
@@ -72,74 +106,12 @@
 - T06 PASS: duplicate/stale approval rejected.
 - Final test output: `M14 AUTHORITY TEST SUITE COMPLETE: T01-T06 PASS`.
 
-## M15-A — Human Authorization Security Design
-
-**Status: BLOCKED / DESIGN-AND-TEST GATE — NOT IMPLEMENTED**
-
-The three independent adversarial reviews (Claude, Gemini and Copilot) identified a common need to strengthen the human authorization boundary before agent/workflow implementation and production mutation. Their findings are treated as design input; no AI verdict itself constitutes project approval.
-
-### Pinned design decision
-
-- Primary daily human authorization: **Passkey / WebAuthn**.
-- Recovery: separate controlled recovery credential; PUK-like high-entropy recovery code is a candidate UX mechanism, not an unrestricted master key.
-- Separate signing key remains an implementation alternative for recovery/break-glass and must be evaluated before final implementation.
-- Telegram remains notification/communication only and is not an approval authority.
-- NVIDIA remains an optional compute adapter and cannot become a Core mutation authority.
-- GitHub review/approval is repository governance and does not by itself constitute the PAI-FORGE cryptographic Human Authorization Protocol.
-- AI consensus is evidence/analysis only and cannot constitute human approval.
-
-### Authorization payload baseline
-
-`authorization_id + task_id + correlation_id + commit_sha + artifact_digest + action + nonce + issued_at + expires_at + human_identity + authorization_method`
-
-### Authorization state machine
-
-`ISSUED -> ACTIVE -> USED | EXPIRED | REVOKED`
-
-Terminal states cannot return to ACTIVE. Nonce consumption must be atomic. Reuse/replay must be BLOCKED.
-
-### Mandatory fail-closed conditions
-
-Identity failure, scope mismatch, commit/artifact mismatch, invalid credential/signature, nonce replay, expiry, revocation, missing evidence, provenance mismatch, authority conflict, FAIL, UNKNOWN or TIMEOUT all map to **BLOCKED**.
-
-### M15-A minimum acceptance criteria
-
-AUTH-01 through AUTH-10 must all be proven by deterministic non-production runtime evidence and independent review. The detailed adversarial test contract is pinned in:
-
-`governance/M15-A-HUMAN-AUTHORIZATION-ADVERSARIAL-TEST-MATRIX-v1.0.md`
-
-### Additional adversarial coverage
-
-ADV-01 through ADV-20 cover action/correlation tampering, payload tampering, expiry manipulation, conflict-round/task-ID bypass, agent/orchestrator/reviewer self-authorization, concurrent replay, artifact/provenance mismatch, missing evidence, FAIL/UNKNOWN promotion, rollback bypass, Telegram-as-authority, AI consensus-as-authority, workflow bypass and unsafe recovery.
-
-### Pinned M15-A documents
+## M15-A Controlled Documents
 
 - `governance/M15-A-HUMAN-AUTHORIZATION-THREAT-MODEL-v1.0.md`
 - `governance/M15-A-HUMAN-AUTHORIZATION-ADVERSARIAL-TEST-MATRIX-v1.0.md`
 - `governance/M15-A-AUTHORIZATION-PROTOCOL-DESIGN-v1.0.md`
-
-## Authoritative PostgreSQL Artifacts
-
-- `governance/POSTGRESQL-SCHEMA-BLUEPRINT-v1.3.md`
-- `governance/POSTGRESQL-SCHEMA-REVIEW-v1.3.md`
-- `governance/POSTGRESQL-SCHEMA-REVIEW-TEST-001.md`
-- `governance/POSTGRESQL-SCHEMA-APPROVAL-v1.0.md`
-- `governance/POSTGRESQL-MIGRATION-DESIGN-PLAN-v1.0.md`
-- `governance/POSTGRESQL-MIGRATION-TEST-MATRIX-v1.0.md`
-- `governance/POSTGRESQL-MIGRATION-SQL-SKELETON-v1.0.md`
-- `governance/M08-STATE-TRANSITION-EXECUTION-RECORD-v1.0.md`
-- `governance/M09-OPTIMISTIC-CONCURRENCY-EXECUTION-RECORD-v1.0.md`
-- `governance/M10-EVENT-SEQUENCING-EXECUTION-RECORD-v1.0.md`
-- `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE.sql`
-- `governance/M11-IDEMPOTENCY-MINIMUM-EVIDENCE-EXECUTION-RECORD-v1.0.md`
-- `migrations/nonprod/010_m12_provenance_strengthening.sql`
-- `governance/M12-PROVENANCE-STRENGTHENING-EXECUTION-RECORD-v1.0.md`
-- `migrations/nonprod/011_m13_candidate_approval_boundary.sql`
-- `migrations/nonprod/012_m13_authority_concurrency_provenance.sql`
-- `governance/M13-CANDIDATE-BOUNDARY-EXECUTION-RECORD-v1.0.md`
-- `migrations/nonprod/013_m14_approval_authority.sql`
-- `governance/M14-APPROVAL-AUTHORITY-EXECUTION-RECORD-v1.0.md`
-- `governance/M15-STAGE1-CONTROLLED-READINESS-EVIDENCE-v1.0.md`
+- `governance/M15-A-CONTROL-DETERMINISM-CONTRACT-v1.0.md`
 
 ## Migration Preconditions
 
@@ -151,6 +123,7 @@ ADV-01 through ADV-20 cover action/correlation tampering, payload tampering, exp
 6. M14 approval authority is technically enforced by database principal/privilege boundary in the tested non-production control.
 7. M15 Stage 1 runtime readiness is PASS; subsequent M15 progression requires its own controlled evidence and applicable approval gate.
 8. M15-A Human Authorization is not yet proven; no production authorization path may be inferred from M14 database approval tests.
+9. P0-1 through P0-4 and required P1 security boundaries must be proven before READY.
 
 ## Design Principles
 
@@ -160,13 +133,19 @@ PostgreSQL/PostGIS is the trusted structured persistence layer. LLMs do not dire
 
 Human authority is a separate control plane from AI reasoning and repository automation.
 
+Control is deterministic policy enforcement, not an AI decision-maker.
+
+Untrusted natural-language content cannot create authority or expand scope.
+
 ## Immediate Next Actions
 
-1. Freeze M15-A threat model, authorization payload, state machine and adversarial test contract.
-2. Design the implementation contract: verification boundary, identity model, nonce/expiry/revocation/replay controls, recovery, and evidence schema.
-3. Implement and test only in controlled non-production scope.
-4. Obtain independent review and explicit Human Project Owner acceptance before progressing.
-5. Do not enable production deployment/mutation, Telegram approval or NVIDIA Core mutation.
+1. Implement controlled non-production P0-3 deterministic Control contract.
+2. Execute CTRL-01..CTRL-05 and record real runtime evidence.
+3. Freeze/implement P0-1 human-readable authorization presentation and AUTH-11.
+4. Freeze/implement P0-2 prompt-injection isolation and INJ-01.
+5. Finalize recovery security contract and REC-01/REC-02.
+6. Design and test Core network isolation (P1-2).
+7. Only after the above, execute the second independent adversarial review.
 
 ## Stop Conditions
 
@@ -174,6 +153,6 @@ Any unresolved security, integrity, authority, concurrency, idempotency, provena
 
 **Production migration, production SQL execution, data import, production deployment promotion and infrastructure mutation remain BLOCKED.**
 
-**M15-A remains BLOCKED until AUTH-01..AUTH-10 and ADV-01..ADV-20 are executed with verifiable evidence and independently reviewed.**
+**M15-A remains BLOCKED until AUTH-01..AUTH-11, ADV-01..ADV-20 and the newly pinned CTRL/INJ/REC/NET/CONF tests are executed with verifiable evidence and independently reviewed.**
 
 **Source of Truth Rule:** Versioned repository governance records are the durable project control layer. Conversational context is not the sole authority.
