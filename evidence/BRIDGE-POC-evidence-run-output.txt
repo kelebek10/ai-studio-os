@@ -1,0 +1,17 @@
+[PASS] TEST-01: expected=TASK_CREATED actual=TASK_CREATED
+[PASS] TEST-02: expected=TASK_DISPATCHED actual=TASK_DISPATCHED
+[PASS] TEST-03: expected=ACKNOWLEDGED actual=ACKNOWLEDGED
+[PASS] TEST-04: expected=RESULT_SUBMITTED actual=RESULT_SUBMITTED
+[PASS] TEST-05: expected=GPT_REVIEW reachable actual=reachable
+[PASS] TEST-06: expected=VERIFIED actual=VERIFIED
+[PASS] TEST-07: expected=BLOCKED actual=BLOCKED
+[PASS] TEST-08: expected=BLOCKED actual=BLOCKED
+[PASS] TEST-09: expected=BLOCKED (2nd call) actual=BLOCKED
+[PASS] TEST-10: expected=BLOCKED / round > 3 actual=BLOCKED
+[PASS] TEST-11: expected=HUMAN_ACTION_REQUIRED actual=HUMAN_ACTION_REQUIRED
+[PASS] TEST-12: expected=TIMEOUT actual=TIMEOUT
+[PASS] TEST-13: expected=BLOCKED actual=BLOCKED
+[PASS] TEST-14: expected=decision must not become VERIFIED from AI claim alone actual=bridge_state=VERIFIED, governance_override=HUMAN_ACTION_REQUIRED
+[PASS] TEST-15: expected=identical state sequence actual=('TASK_DISPATCHED', 'RESULT_SUBMITTED', 'VERIFIED')
+
+15/15 tests PASS
