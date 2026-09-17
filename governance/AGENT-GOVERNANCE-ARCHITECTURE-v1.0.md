@@ -1,7 +1,7 @@
-# PAI-FORGE — AGENT GOVERNANCE ARCHITECTURE v1.0
+# PAI-FORGE — AGENT GOVERNANCE ARCHITECTURE v1.1
 
 Document ID: AGENT-GOV-001
-Version: 1.0
+Version: 1.1
 Status: CONTROLLED DESIGN BASELINE
 Branch: phase-1-3-foundation
 Owner: Human Project Owner
@@ -13,19 +13,20 @@ Task Contract: TASK-001
 Result Gate: AI-RHG-001
 Tool Policy: TOOL-001
 Conflict Protocol: CONFLICT-001
+Owner Intervention Policy: OWNER-INT-001
 
 ## 1. Purpose
 
-Define the permanent authority, delegation, communication and loop-prevention architecture for PAI-FORGE agents.
+Define the permanent authority, delegation, communication, oversight and loop-prevention architecture for PAI-FORGE agents.
 
-This document adds the hierarchy and delegation rules required to extend the agent system without changing the constitutional control model.
+This architecture separates operational management from independent oversight and uses risk-based intervention rather than continuous approval gates.
 
 ## 2. Authority Hierarchy
 
 The authoritative hierarchy is:
 
 1. Human Project Owner
-2. Owner Agent — observation, representation and escalation only
+2. Owner Agent — independent oversight, representation and escalation within OWNER-INT-001
 3. GPT-5.6 Luna — Chief Architect / General Project Director / Chief Auditor
 4. Domain Directors
 5. Registered Specialist Agents
@@ -35,24 +36,35 @@ No lower layer may override a higher layer.
 
 The hierarchy does not create human authority for any AI layer.
 
+Operational flow remains `GPT → Director → Specialist`. Owner Agent observes the full controlled system and intervenes only according to the risk-based Owner Intervention Policy.
+
 ## 3. Owner Agent Boundary
 
-The Owner Agent represents the Human Project Owner for controlled observation and escalation.
+The Owner Agent represents the Human Project Owner for independent controlled observation, risk assessment and escalation.
 
 It may:
-- observe verified project state;
+- observe verified project state within its oversight scope;
 - collect critical notifications;
 - identify Human Project Owner action requirements;
-- present status and evidence to the Human Project Owner.
+- present status and evidence directly to the Human Project Owner;
+- classify risk under OWNER-INT-001;
+- request controlled intervention for R3 conditions;
+- initiate an R4 Safety Hold only when a predefined critical condition is deterministically satisfied.
 
 It may not:
+- stop work merely because of a keyword, phrase, low-risk implementation detail or ordinary task action;
+- invent new stop conditions;
+- convert R0-R2 risk into Safety Hold without a verified policy condition;
 - grant or expand permissions;
-- approve protected actions;
+- approve protected actions on behalf of the Human Project Owner;
 - alter governance;
-- override GPT or deterministic Control;
-- clear security blocks;
+- override deterministic Control;
+- clear or bypass Security blocks;
 - activate itself or another agent;
-- reset conflict lineage.
+- reset conflict lineage or extend the three-round limit;
+- directly mutate protected Core or production resources.
+
+Risk detection and stop authority are separate decisions: `RISK != STOP`.
 
 ## 4. GPT Authority Boundary
 
@@ -63,7 +75,7 @@ GPT may:
 - assign work to registered domain directors/agents within verified permission boundaries;
 - integrate results;
 - perform independent verification;
-- stop unsafe, contradictory or unverifiable progression;
+- stop unsafe, contradictory or unverifiable progression when applicable control conditions require it;
 - prepare controlled next actions.
 
 GPT may not:
@@ -142,7 +154,7 @@ Communication must use governed task/result records:
 
 `TASK → ACK → WORK → RESULT → EVIDENCE → GPT VERIFICATION → NEXT CONTROLLED ACTION`
 
-Progress messages are lifecycle events, not problem-solving rounds.
+Progress messages, quality checks and risk observations are lifecycle/control events, not problem-solving rounds.
 
 Substantive disagreement belongs to the controlled conflict lineage.
 
@@ -161,7 +173,7 @@ This limit applies across agents, providers, directors and communication channel
 
 Changing task ID, agent, provider, conversation, branch or workflow does not reset the lineage.
 
-Execution lifecycle events may continue as required for handoff, verification or closure; they are not new conflict rounds.
+Execution lifecycle events, risk assessment, QA checks and evidence delivery may continue as required for handoff, verification or safety handling; they are not new conflict rounds.
 
 ## 10. Terminal Conflict State
 
@@ -239,6 +251,8 @@ New domains and specialist capabilities shall attach beneath GPT through the exi
 
 New capabilities must not modify the constitutional hierarchy, task identity model, result gate or conflict lineage merely to become operational.
 
+New quality or security gates must attach through explicit risk-based intervention policy and must not become unrestricted continuous blockers.
+
 If a proposed capability cannot fit safely within the existing model, it remains BLOCKED / ARCHITECTURE GAP until a controlled governance change is approved.
 
 ## 17. No-Debt Rule
@@ -251,9 +265,11 @@ An empty capability branch is preferred to an unsafe temporary authority path.
 
 ## 18. Fail-Closed Conditions
 
-The relevant action must stop when any required hierarchy, identity, scope, permission, task, lineage, evidence, security or authority value is missing, stale, conflicting, malformed or unverifiable.
+The relevant protected action must stop when any required hierarchy, identity, scope, permission, task, lineage, evidence, security or authority value is missing, stale, conflicting, malformed or unverifiable.
 
-The system must never interpret unavailable control information as permission.
+Normal low-risk work must not be stopped solely because risk information is incomplete when no protected action is being attempted.
+
+The system must never interpret unavailable control information as permission for a protected action.
 
 ## 19. Required Runtime Controls
 
@@ -267,7 +283,9 @@ This architecture is not considered runtime-enforced until real evidence exists 
 - counter-reset rejection;
 - terminal conflict closure;
 - terminal task non-reopening;
-- security block independence;
+- risk-based Owner Agent intervention thresholds;
+- context-aware false-positive protection;
+- Security block independence;
 - capability activation gates;
 - auditability of protected actions.
 
@@ -286,9 +304,12 @@ AGOV-08: Round 4 and counter-reset attempts are denied.
 AGOV-09: Terminal conflicts cannot automatically reopen.
 AGOV-10: Delegation depth is fail-closed when unconfigured or unverifiable.
 AGOV-11: Security blocking remains independently protected.
-AGOV-12: Future capabilities can be added without changing the constitutional hierarchy.
-AGOV-13: Missing capabilities may remain controlled empty branches.
-AGOV-14: No-debt and fail-closed principles remain binding.
+AGOV-12: Owner Agent intervention is risk-based and context-aware rather than keyword-driven.
+AGOV-13: R0-R2 conditions do not automatically create Safety Hold.
+AGOV-14: R4 Safety Hold requires a predefined critical condition.
+AGOV-15: Future capabilities can be added without changing the constitutional hierarchy.
+AGOV-16: Missing capabilities may remain controlled empty branches.
+AGOV-17: No-debt and fail-closed principles remain binding.
 
 ## 21. Current State
 
