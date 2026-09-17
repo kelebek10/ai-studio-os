@@ -1,7 +1,7 @@
 # PEYZAJ AI / PAI-FORGE — CURRENT STATE
 
 **Document:** CURRENT-STATE.md  
-**Version:** 2.5  
+**Version:** 2.6  
 **Status:** CONTROLLED BASELINE  
 **Classification:** PROJECT CONTROL  
 **Owner:** Human Project Owner  
@@ -27,6 +27,25 @@
 - M13 — Candidate Boundary: PASS — authority, bypass, concurrency, provenance integrity and rollback evidence recorded
 - M14 — Approval Authority: PASS — database principal/privilege enforcement verified; AI and workflow approval denied; authorized human approval accepted; provenance and stale/duplicate rejection verified
 - M15 Stage 1 — Controlled Readiness Runtime Gate: PASS — O1/O2/O3/O4/O5 real runtime evidence verified
+
+## Claude Project Operating Boundary
+
+**Status: CONTROLLED / ACTIVE**
+
+Claude is a **PAI-FORGE-focused AI engineering assistant**. Its project boundary is pinned in:
+
+`governance/CLAUDE-PAIFORGE-OPERATING-BOUNDARY-v1.0.md`
+
+Key boundary:
+- authorized PAI-FORGE repository: `kelebek10/ai-studio-os`;
+- normal development branch: `phase-1-3-foundation`;
+- `main` is not directly writable by Claude;
+- Claude may implement/review task-scoped code, tests and evidence;
+- Claude may not create human authority, approve/merge its own work, bypass security/governance boundaries, or perform production mutation;
+- boundary changes require Human Project Owner approval and a versioned governance change;
+- when uncertain or outside scope, Claude must STOP rather than expand its own authority.
+
+The GitHub integration's repository access is an infrastructure permission and does not itself expand Claude's project role.
 
 ## M15-A — Current Gate
 
@@ -112,6 +131,7 @@ P0-3 cannot be marked PASS from documentation alone. Real non-production runtime
 - `governance/M15-A-HUMAN-AUTHORIZATION-ADVERSARIAL-TEST-MATRIX-v1.0.md`
 - `governance/M15-A-AUTHORIZATION-PROTOCOL-DESIGN-v1.0.md`
 - `governance/M15-A-CONTROL-DETERMINISM-CONTRACT-v1.0.md`
+- `governance/CLAUDE-PAIFORGE-OPERATING-BOUNDARY-v1.0.md`
 
 ## Migration Preconditions
 
