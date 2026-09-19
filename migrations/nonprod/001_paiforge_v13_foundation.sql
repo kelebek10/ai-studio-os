@@ -283,7 +283,7 @@ ALTER TABLE core.constraint_version ADD CONSTRAINT constraint_version_classifica
 CREATE OR REPLACE FUNCTION core.validate_constraint_version_policy()
 RETURNS trigger
 LANGUAGE plpgsql
-AS $
+AS $bridge$
 BEGIN
   IF core.classification_is_safety(NEW.constraint_id)
      AND NEW.enforcement <> 'NON_NEGOTIABLE' THEN
@@ -291,7 +291,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$bridge$;
 
 CREATE TRIGGER trg_constraint_version_policy
 BEFORE INSERT OR UPDATE OF constraint_id, enforcement ON core.constraint_version
