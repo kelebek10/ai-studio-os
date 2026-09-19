@@ -49,11 +49,20 @@ def advance_round(conn, logical_problem_id: str, new_round: int) -> int | None:
     non-monotonic — per BRIDGE-RUNTIME-001 section 4, this MUST be
     treated as BLOCKED / ROUND_LIMIT_OR_STALE by the caller, never
     retried with a different query)."""
-    with conn.cursor() as cur:
-        cur.execute(ADVANCE_ROUND_SQL, (logical_problem_id, new_round))
-        row = cur.fetchone()
-    conn.commit()
-    return row[0] if row else None
+    try:
+        with conn.cursor() as cur:
+            cur.execute(ADVANCE_ROUND_SQL, (logical_problem_id, new_round))
+            row = cur.fetchone()
+        conn.commit()
+        return row[0] if row else None
+    except Exception as exc:
+        conn.rollback()
+        # The real table CHECK is an intentional defense-in-depth denial
+        # for round > 3. Normalize that DB-layer rejection to the same
+        # BLOCKED/None contract used by the atomic WHERE guard.
+        if new_round > 3 and getattr(exc, "pgcode", None) == "23514":
+            return None
+        raise
 
 
 def current_round(conn, logical_problem_id: str) -> int:
