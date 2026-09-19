@@ -46,7 +46,11 @@ jobs:
       - name: Verify branch and non-production boundary
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = "feature/comm-bridge-runtime-v1"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test "$GITHUB_HEAD_REF" = "feature/comm-bridge-runtime-v1"
+          else
+            test "$GITHUB_REF_NAME" = "feature/comm-bridge-runtime-v1"
+          fi
           test ! -e migrations/production
           test ! -e migrations/prod
           echo "BOUNDARY PASS: controlled feature branch + non-production only"
