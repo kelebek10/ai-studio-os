@@ -70,21 +70,29 @@ def main() -> int:
         conn.commit()
         check("round advance to 3 still works after restart", advanced_to_3 is not None and advanced_to_3[0] == 3)
 
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO bridge.round_lineage (logical_problem_id, highest_round)
-                VALUES (%s, 4)
-                ON CONFLICT (logical_problem_id) DO UPDATE
-                SET highest_round = EXCLUDED.highest_round, updated_at = now()
-                WHERE bridge.round_lineage.highest_round < EXCLUDED.highest_round
-                  AND EXCLUDED.highest_round <= 3
-                RETURNING highest_round;
-                """,
-                (FIXED_LP_ROUND,),
-            )
-            denied = cur.fetchone()
-        conn.commit()
+        denied = None
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO bridge.round_lineage (logical_problem_id, highest_round)
+                    VALUES (%s, 4)
+                    ON CONFLICT (logical_problem_id) DO UPDATE
+                    SET highest_round = EXCLUDED.highest_round, updated_at = now()
+                    WHERE bridge.round_lineage.highest_round < EXCLUDED.highest_round
+                      AND EXCLUDED.highest_round <= 3
+                    RETURNING highest_round;
+                    """,
+                    (FIXED_LP_ROUND,),
+                )
+                denied = cur.fetchone()
+            conn.commit()
+        except Exception as exc:
+            conn.rollback()
+            # The table CHECK is the DB-layer defense-in-depth denial.
+            # Both the atomic WHERE guard and the CHECK may reject round 4.
+            if getattr(exc, "pgcode", None) != "23514":
+                raise
         check("round 4 still deterministically denied after restart", denied is None)
 
         # 3. result/idempotency row survived
