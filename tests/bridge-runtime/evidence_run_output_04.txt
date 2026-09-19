@@ -1,0 +1,98 @@
+COMM-BRIDGE-IMPLEMENT-04 — combined real test run output
+Run at: 2026-09-19T00:00:00Z (container clock; see repo commit timestamp for authoritative time)
+=======================================================
+
+--- tests/bridge-runtime/test_authority_gate.py ---
+[PASS] P0-1-detect-authority-claim: expected=True actual=True 
+[PASS] P0-1-no-false-positive: expected=0 actual=0 
+[PASS] P0-1-free-text-grants-nothing: expected=False actual=False 
+[PASS] P0-1-valid-source-grants: expected=True actual=True 
+[PASS] P0-1-partial-source-denied: expected=False actual=False 
+[PASS] P0-1-freetext-scope-expansion-rejected: expected=True actual=True 
+
+6/6 authority_gate algorithm-level tests PASS
+
+--- tests/bridge-runtime/test_round_lineage.py ---
+[PASS] P1-1-monotonic-advance: expected=2 actual=2 
+[PASS] P1-1-stale-transition-rejected: expected=True actual=True 
+[PASS] P1-1-round4-denied: expected=True actual=True MAX_ROUND=3
+[PASS] P1-1-concurrent-race-final-round: expected=3 actual=3 6 of 9 concurrent attempts correctly rejected
+[PASS] P1-1-concurrent-race-never-exceeds-max: expected=True actual=True 
+[PASS] P1-1-no-reset-via-other-dimension: expected=True actual=True 
+[PASS] P1-1-serialize-reload-model: expected=2 actual=2 MODEL ONLY — not real Postgres restart durability proof
+[PASS] P1-1-reloaded-store-still-enforces-rules: expected=True actual=True 
+
+8/8 round_lineage algorithm-level tests PASS
+
+--- tests/bridge-runtime/test_replay_consumption.py ---
+[PASS] P1-2-first-submission-accepted: expected=T-1 actual=T-1 
+[PASS] P1-2-different-task-id-same-logical-result-is-replay: expected=True actual=True 
+[PASS] P1-2-different-logical-problem-accepted: expected=T-3 actual=T-3 
+[PASS] P1-2-is-consumed-true-after-accept: expected=True actual=True 
+[PASS] P1-2-is-consumed-false-before-accept: expected=False actual=False 
+[PASS] P1-2-concurrent-duplicate-only-one-wins: expected=1 actual=1 12 concurrent threads raced
+[PASS] P1-2-serialize-reload-model: expected=True actual=True MODEL ONLY — not real Postgres restart durability proof
+[PASS] P1-2-reloaded-ledger-still-replay-protected: expected=True actual=True 
+
+8/8 replay_consumption algorithm-level tests PASS
+
+--- tests/bridge-runtime/test_delegation_scope.py ---
+[PASS] P1-3-valid-subset-accepted: expected=True actual=True 
+[PASS] P1-3-scope-expansion-rejected: expected=False actual=False 
+[PASS] P1-3-missing-lineage-field-rejected: expected=False actual=False 
+[PASS] P1-3-policy-divergence-rejected: expected=False actual=False 
+[PASS] P1-3-unknown-token-fail-closed: expected=False actual=False 
+[PASS] P1-3-canonicalization-dedup-sort: expected=('read:evidence', 'read:governance') actual=('read:evidence', 'read:governance') 
+[PASS] P1-3-scope-is-subset-true: expected=True actual=True 
+[PASS] P1-3-scope-is-subset-false: expected=False actual=False 
+[PASS] P1-3-freetext-claim-no-effect-on-decision: expected=True actual=True 
+
+9/9 delegation_scope algorithm-level tests PASS
+
+--- tests/bridge-runtime/test_trigger_auth.py ---
+[PASS] TGA-01-algo: expected=True actual=True 
+[PASS] TGA-02-algo: expected=False actual=False 
+[PASS] TGA-05-algo: expected=False actual=False 
+[PASS] TGA-03-algo-match: expected=True actual=True 
+[PASS] TGA-03-algo-mismatch: expected=False actual=False 
+[PASS] TGA-04-algo-valid: expected=True actual=True 
+[PASS] TGA-04-algo-stale: expected=False actual=False 
+[PASS] TGA-06-algo: expected=(False, True) actual=(False, True) 
+[PASS] TGA-07-algo-missing-field: expected=True actual=True 
+[PASS] TGA-07-algo-valid-passes: expected=[] actual=[] 
+[PASS] TGA-08-algo-shape: expected=True actual=True shape-only; real DB-enforced immutability is BLOCKED (needs Postgres)
+[PASS] TGA-composed-accept: expected=True actual=True 
+[PASS] TGA-composed-reject-badsig: expected=False actual=False 
+[PASS] TGA-composed-reject-replay: expected=False actual=False 
+[PASS] TGA-audit-trail-length: expected=3 actual=3 
+[PASS] CAW-07-algo-match: expected=True actual=True 
+[PASS] CAW-07-algo-mismatch: expected=False actual=False 
+[PASS] CAW-08-algo-waiting: expected=WAITING actual=WAITING 
+[PASS] CAW-08-algo-timeout: expected=TIMEOUT actual=TIMEOUT 
+[PASS] CAW-08-algo-acked: expected=ACKNOWLEDGED actual=ACKNOWLEDGED 
+
+20/20 algorithm-level tests PASS
+
+REMINDER: these are algorithm-level results only. Every TGA-01..08 and
+CAW-01..10 CRITERION remains BLOCKED / CAPABILITY GAP per
+governance/TGA-CAW-ACCEPTANCE-CRITERIA-v1.0.md — no real endpoint,
+Bridge, Postgres, or Claude-dispatch mechanism exists in this environment.
+
+=======================================================
+
+TOTAL: 51/51 algorithm-level tests PASS across 5 modules
+  authority_gate:      6/6
+  round_lineage:       8/8
+  replay_consumption:  8/8
+  delegation_scope:    9/9
+  trigger_auth:       20/20
+
+Repeated 5x for round_lineage and replay_consumption concurrency tests
+(threading-based races) with no flakiness observed on any run.
+
+REMINDER (repeated from evidence_run_output.txt): these are
+algorithm-level results only. No TGA-01..08 or CAW-01..10 criterion,
+and no P0-2/P1-1/P1-2/P1-4 real-runtime item, is PASS. See
+governance/BRIDGE-RUNTIME-V1-P0-P1-CLOSURE-v1.0.md for the full,
+honest breakdown of what algorithm-level closure does and does not
+prove.
