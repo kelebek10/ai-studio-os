@@ -278,6 +278,25 @@ ALTER TABLE core.constraint_version DROP CONSTRAINT IF EXISTS constraint_version
 ALTER TABLE core.constraint_version ADD CONSTRAINT constraint_version_classification_is_safety_check
   CHECK (NOT (core.classification_is_safety(constraint_id) AND enforcement <> 'NON_NEGOTIABLE'));
 
+-- Preserve the existing verification contract's deterministic error semantics:
+-- policy violations are surfaced as a named exception before the defensive CHECK.
+CREATE OR REPLACE FUNCTION core.validate_constraint_version_policy()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $
+BEGIN
+  IF core.classification_is_safety(NEW.constraint_id)
+     AND NEW.enforcement <> 'NON_NEGOTIABLE' THEN
+    RAISE EXCEPTION 'SAFETY_ENGINEERING_REQUIRES_NON_NEGOTIABLE';
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+CREATE TRIGGER trg_constraint_version_policy
+BEFORE INSERT OR UPDATE OF constraint_id, enforcement ON core.constraint_version
+FOR EACH ROW EXECUTE FUNCTION core.validate_constraint_version_policy();
+
 -- Database-enforced immutability for historical/governance records.
 CREATE OR REPLACE FUNCTION governance.reject_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
