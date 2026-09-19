@@ -84,11 +84,9 @@ CREATE TABLE IF NOT EXISTS bridge.delegation (
   scope jsonb NOT NULL,
   status text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
-  -- P1-3: delegation scope must be a subset of parent task scope.
-  -- Enforced here defense-in-depth alongside application-layer check.
-  CONSTRAINT delegation_scope_subset CHECK (
-    scope <@ (SELECT scope FROM bridge.task WHERE task_id = parent_task_id)
-  )
+  -- P1-3 is enforced by a database trigger because PostgreSQL CHECK
+  -- constraints cannot contain subqueries. The trigger performs the
+  -- parent-scope lookup transactionally for INSERT/UPDATE.
 );
 
 -- Append-only audit trail for trigger decisions (TGA-08) and all
@@ -110,6 +108,37 @@ CREATE TABLE IF NOT EXISTS bridge.audit_event (
 CREATE TRIGGER trg_bridge_audit_immutable
 BEFORE UPDATE OR DELETE ON bridge.audit_event
 FOR EACH ROW EXECUTE FUNCTION governance.reject_mutation();
+
+-- Database-enforced delegation containment. A CHECK constraint cannot
+-- legally reference bridge.task via a subquery, so containment is a
+-- deterministic trigger-level invariant instead of invalid DDL.
+CREATE OR REPLACE FUNCTION bridge.validate_delegation_scope()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $
+DECLARE
+  parent_scope jsonb;
+BEGIN
+  SELECT scope INTO parent_scope
+  FROM bridge.task
+  WHERE task_id = NEW.parent_task_id
+  FOR SHARE;
+
+  IF parent_scope IS NULL THEN
+    RAISE EXCEPTION 'DELEGATION_PARENT_TASK_NOT_FOUND';
+  END IF;
+
+  IF NOT (NEW.scope <@ parent_scope) THEN
+    RAISE EXCEPTION 'DELEGATION_SCOPE_EXPANSION';
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+CREATE TRIGGER trg_bridge_delegation_scope
+BEFORE INSERT OR UPDATE OF parent_task_id, scope ON bridge.delegation
+FOR EACH ROW EXECUTE FUNCTION bridge.validate_delegation_scope();
 
 CREATE TRIGGER trg_bridge_round_lineage_immutable_delete
 BEFORE DELETE ON bridge.round_lineage
