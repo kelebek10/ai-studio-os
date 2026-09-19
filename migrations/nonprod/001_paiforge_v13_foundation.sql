@@ -160,7 +160,8 @@ CREATE TABLE IF NOT EXISTS core.constraint_version (
   created_at timestamptz NOT NULL DEFAULT now(),
   created_by uuid NOT NULL,
   UNIQUE(constraint_id,version),
-  CHECK (NOT (classification_is_safety(constraint_id) AND enforcement <> 'NON_NEGOTIABLE'))
+  -- Safety classification CHECK is added after the helper function is created below.
+  -- PostgreSQL cannot resolve a function that does not yet exist during CREATE TABLE.
 );
 
 CREATE TABLE IF NOT EXISTS governance.design_state (
