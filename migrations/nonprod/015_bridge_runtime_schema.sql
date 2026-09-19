@@ -83,10 +83,7 @@ CREATE TABLE IF NOT EXISTS bridge.delegation (
   specialist_id text NOT NULL,
   scope jsonb NOT NULL,
   status text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  -- P1-3 is enforced by a database trigger because PostgreSQL CHECK
-  -- constraints cannot contain subqueries. The trigger performs the
-  -- parent-scope lookup transactionally for INSERT/UPDATE.
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Append-only audit trail for trigger decisions (TGA-08) and all
@@ -115,7 +112,7 @@ FOR EACH ROW EXECUTE FUNCTION governance.reject_mutation();
 CREATE OR REPLACE FUNCTION bridge.validate_delegation_scope()
 RETURNS trigger
 LANGUAGE plpgsql
-AS $
+AS $bridge$
 DECLARE
   parent_scope jsonb;
 BEGIN
@@ -134,7 +131,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$bridge$;
 
 CREATE TRIGGER trg_bridge_delegation_scope
 BEFORE INSERT OR UPDATE OF parent_task_id, scope ON bridge.delegation
