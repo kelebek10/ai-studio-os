@@ -1,0 +1,137 @@
+name: M15 Controlled Readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: M15 task identifier
+        required: true
+        default: M15
+      target_branch:
+        description: Expected controlled branch
+        required: true
+        default: phase-1-3-foundation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m15-${{ inputs.task_id }}-${{ inputs.target_branch }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: G1 Scope Lock
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate task and branch
+        run: |
+          set -euo pipefail
+          test "${{ inputs.task_id }}" = "M15"
+          test "${{ inputs.target_branch }}" = "phase-1-3-foundation"
+          echo "G1 PASS: M15 scope locked"
+
+  prepare:
+    name: G2 Orchestrator Contract Check
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify controlled contracts
+        run: |
+          set -euo pipefail
+          test -s .github/agents/m15-orchestrator.agent.md
+          test -s .github/agents/m15-reviewer.agent.md
+          test -s scripts/m15/test.sh
+          test -s migrations/nonprod/014_m15_constraint_versioning.sql
+          test ! -e governance/CURRENT-STATE.md.tmp
+          echo "G2 PASS: controlled M15 inputs present"
+
+  test:
+    name: G3 Non-Production Test Gate
+    needs: prepare
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: m15_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d m15_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute disposable PostgreSQL migration and tests
+        env:
+          M15_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/m15_test
+          PGOPTIONS: -c paz.m15_nonprod=true -c paz.environment=test
+        run: |
+          set -euo pipefail
+          test ! -e migrations/production
+          test ! -e migrations/prod
+          psql "$M15_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -X -f migrations/nonprod/014_m15_constraint_versioning.sql
+          bash scripts/m15/test.sh
+          echo "G3 PASS: M15 non-production PostgreSQL suite passed"
+
+  review:
+    name: G4 Independent Review Gate
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce reviewer contract
+        run: |
+          set -euo pipefail
+          test -s .github/agents/m15-reviewer.agent.md
+          echo "G4 BLOCKED: independent reviewer execution identity must be verified before PASS"
+          exit 1
+
+  evidence:
+    name: G5 Evidence Gate
+    needs: review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail closed until evidence package exists
+        run: |
+          set -euo pipefail
+          if [ ! -d evidence/m15 ]; then
+            echo "G5 BLOCKED: M15 evidence package does not exist yet"
+            exit 1
+          fi
+          echo "G5 PASS"
+
+  human-gate:
+    name: G6 Human Gate
+    needs: evidence
+    runs-on: ubuntu-latest
+    environment:
+      name: m15-human-approval
+    permissions:
+      contents: read
+    steps:
+      - name: Explicit human gate placeholder
+        run: |
+          set -euo pipefail
+          echo "G6 requires a separately configured human approval environment."
+          echo "This workflow does not create or infer M14 approval."
+          exit 1
+
+  commit-gate:
+    name: G7 Commit Gate
+    needs: human-gate
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: No automatic commit
+        run: |
+          set -euo pipefail
+          echo "G7 BLOCKED: automatic commit is disabled until M14-bound human approval integration is verified."
+          exit 1

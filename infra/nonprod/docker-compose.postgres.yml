@@ -1,0 +1,52 @@
+# COMM-BRIDGE-IMPLEMENT-05 — nonprod Postgres 16 for Bridge Runtime P1-1/1-2/1-3
+# real-database readiness testing.
+#
+# STATUS: WRITTEN, NOT EXECUTED. Claude's working environment has no
+# Docker daemon and no network egress (confirmed this task: `apt-get
+# install postgresql` returns 403 Forbidden from the egress proxy;
+# no `docker` binary; no DB/webhook MCP connector). This file has
+# never been run. It is a ready-to-use artifact for whoever (human or
+# CI) has real Docker + Postgres access.
+#
+# Usage (by a party with real access, NOT executed by Claude):
+#   docker compose -f infra/nonprod/docker-compose.postgres.yml up -d
+#   psql "$DATABASE_URL" -f migrations/nonprod/001_paiforge_v13_foundation.sql
+#   psql "$DATABASE_URL" -f migrations/nonprod/002_paiforge_v13_verification.sql
+#   ... apply 003 through 014 in numeric order (015 depends on
+#       governance.migration_ledger / governance.reject_mutation()
+#       defined starting in 001) ...
+#   psql "$DATABASE_URL" -f migrations/nonprod/015_bridge_runtime_schema.sql
+#   pip install -r tests/bridge-runtime/postgres_integration/requirements.txt
+#   DATABASE_URL=postgresql://bridge_test:bridge_test@localhost:55432/paiforge_bridge_test \
+#     pytest tests/bridge-runtime/postgres_integration/ -v
+#
+# Disposable, nonprod only. No production data, no production
+# credentials. Distinct port (55432) to avoid colliding with any
+# host Postgres.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: paiforge_bridge_nonprod_pg
+    restart: "no"
+    environment:
+      POSTGRES_USER: bridge_test
+      POSTGRES_PASSWORD: bridge_test
+      POSTGRES_DB: paiforge_bridge_test
+    ports:
+      - "55432:5432"
+    volumes:
+      - paiforge_bridge_nonprod_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bridge_test -d paiforge_bridge_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  paiforge_bridge_nonprod_pgdata:
+    # Named (not anonymous) so `docker compose restart` / a full
+    # `docker compose down` + `up` cycle can be used for the P1-1/1-2/1-3
+    # restart-persistence test without losing data between phases.
+    # `docker compose down -v` DELETES this volume — do not use -v
+    # between the write phase and verify phase of the restart test.

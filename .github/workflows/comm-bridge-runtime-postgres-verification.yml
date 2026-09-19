@@ -1,0 +1,141 @@
+name: COMM Bridge Runtime PostgreSQL Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/comm-bridge-runtime-v1
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comm-bridge-pg-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Real PostgreSQL 16 Bridge Runtime Verification
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: bridge_test
+          POSTGRES_DB: paiforge_bridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d paiforge_bridge_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+
+    env:
+      DATABASE_URL: postgresql://postgres:bridge_test@127.0.0.1:5432/paiforge_bridge_test
+      PGOPTIONS: -c paz.m15_nonprod=true -c paz.environment=test
+
+    steps:
+      - name: Checkout controlled branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Verify branch and non-production boundary
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test "$GITHUB_HEAD_REF" = "feature/comm-bridge-runtime-v1"
+          else
+            test "$GITHUB_REF_NAME" = "feature/comm-bridge-runtime-v1"
+          fi
+          test ! -e migrations/production
+          test ! -e migrations/prod
+          echo "BOUNDARY PASS: controlled feature branch + non-production only"
+
+      - name: Discover PostgreSQL 16 service container
+        run: |
+          set -euo pipefail
+          PG_CONTAINER="$(docker ps --filter ancestor=postgres:16 --format '{{.ID}}' | head -1)"
+          test -n "$PG_CONTAINER"
+          echo "PG_CONTAINER=$PG_CONTAINER" >> "$GITHUB_ENV"
+          docker exec "$PG_CONTAINER" psql --version
+          docker exec "$PG_CONTAINER" psql -U postgres -d paiforge_bridge_test -c "SELECT version();"
+
+      - name: Apply canonical non-production migrations 001-015
+        run: |
+          set -euo pipefail
+          # The repository's 002-013 files are historical/non-linear verification
+          # fixtures. Several require a separate test_admin/paiforge_test fixture
+          # or a manual two-session setup and are not a single executable migration
+          # chain. Bridge Runtime v1 requires only the real schema dependencies:
+          # 001 foundation -> 014 M15 prerequisite -> 015 bridge runtime.
+          migrations=(
+            migrations/nonprod/001_paiforge_v13_foundation.sql
+            migrations/nonprod/014_m15_constraint_versioning.sql
+            migrations/nonprod/015_bridge_runtime_schema.sql
+          )
+          : > evidence_pg_migrations.txt
+          echo "Historical verification fixtures 002-013 are intentionally not treated as a linear migration chain." | tee -a evidence_pg_migrations.txt
+          for f in "${migrations[@]}"; do
+            echo "=== APPLY $f ===" | tee -a evidence_pg_migrations.txt
+            docker exec -i -e PGOPTIONS="$PGOPTIONS" "$PG_CONTAINER" \
+              psql -U postgres -d paiforge_bridge_test -v ON_ERROR_STOP=1 -X < "$f" \
+              2>&1 | tee -a evidence_pg_migrations.txt
+          done
+          echo "BRIDGE MIGRATION DEPENDENCY CHAIN PASS: 001 -> 014 -> 015" | tee -a evidence_pg_migrations.txt
+
+      - name: Install real PostgreSQL test dependencies
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -r tests/bridge-runtime/postgres_integration/requirements.txt
+
+      - name: Run P1-1 P1-2 P1-3 real PostgreSQL tests
+        run: |
+          set -euo pipefail
+          pytest tests/bridge-runtime/postgres_integration/ -v 2>&1 | tee evidence_pg_integration.txt
+
+      - name: Write restart persistence state
+        run: |
+          set -euo pipefail
+          python tests/bridge-runtime/postgres_integration/restart_test_write_phase.py | tee evidence_pg_restart_write.txt
+
+      - name: Restart real PostgreSQL service without deleting volume
+        run: |
+          set -euo pipefail
+          docker restart "$PG_CONTAINER"
+          for i in $(seq 1 30); do
+            if docker exec "$PG_CONTAINER" pg_isready -U postgres -d paiforge_bridge_test; then
+              break
+            fi
+            sleep 2
+          done
+          docker exec "$PG_CONTAINER" pg_isready -U postgres -d paiforge_bridge_test
+
+      - name: Verify restart persistence and continued enforcement
+        run: |
+          set -euo pipefail
+          python tests/bridge-runtime/postgres_integration/restart_test_verify_phase.py | tee evidence_pg_restart_verify.txt
+
+      - name: Final evidence summary
+        if: always()
+        run: |
+          {
+            echo "=== COMM-BRIDGE REAL POSTGRES VERIFICATION ==="
+            echo "commit: $GITHUB_SHA"
+            echo "branch: $GITHUB_REF_NAME"
+            echo "postgres image: postgres:16"
+            echo "P1-1/P1-2/P1-3: see evidence_pg_integration.txt"
+            echo "restart: see evidence_pg_restart_verify.txt"
+          } | tee evidence_pg_summary.txt
+
+      - name: Upload real runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comm-bridge-postgres-verification
+          path: |
+            evidence_pg_*.txt
+          if-no-files-found: error

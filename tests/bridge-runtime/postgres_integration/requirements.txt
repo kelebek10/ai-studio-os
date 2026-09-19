@@ -1,0 +1,7 @@
+# COMM-BRIDGE-IMPLEMENT-05 — dependencies for the real-Postgres
+# integration test harness in tests/bridge-runtime/postgres_integration/.
+# Not installed in Claude's working environment (no network egress —
+# confirmed this task). For whoever runs the harness against a real
+# `infra/nonprod/docker-compose.postgres.yml` instance.
+psycopg2-binary==2.9.9
+pytest==8.3.3
