@@ -5,10 +5,8 @@ on:
   push:
     branches:
       - feature/comm-bridge-runtime-v1
-    paths:
-      - '.github/workflows/comm-bridge-runtime-postgres-verification.yml'
-      - 'migrations/nonprod/**'
-      - 'tests/bridge-runtime/postgres_integration/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
