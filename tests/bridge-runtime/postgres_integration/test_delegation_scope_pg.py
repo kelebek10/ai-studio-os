@@ -112,7 +112,7 @@ def test_pg_scope_expansion_rejected_by_db_constraint():
         except Exception as exc:
             conn.rollback()
             raised = True
-            assert "delegation_scope_subset" in str(exc) or "check" in str(exc).lower()
+            assert "DELEGATION_SCOPE_EXPANSION" in str(exc)
         assert raised, "delegation_scope_subset CHECK constraint did not reject scope expansion"
     finally:
         conn.close()
@@ -153,7 +153,7 @@ def test_pg_nonexistent_parent_task_rejected_by_fk_not_by_scope():
         except Exception as exc:
             conn.rollback()
             raised = True
-            assert "foreign key" in str(exc).lower() or "violat" in str(exc).lower()
+            assert "DELEGATION_PARENT_TASK_NOT_FOUND" in str(exc)
         assert raised, "FK constraint on bridge.delegation.parent_task_id did not reject a nonexistent parent"
     finally:
         conn.close()
