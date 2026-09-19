@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS core.constraint_version (
   provenance_ref uuid REFERENCES evidence.record(evidence_id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   created_by uuid NOT NULL,
-  UNIQUE(constraint_id,version),
+  UNIQUE(constraint_id,version)
   -- Safety classification CHECK is added after the helper function is created below.
   -- PostgreSQL cannot resolve a function that does not yet exist during CREATE TABLE.
 );
