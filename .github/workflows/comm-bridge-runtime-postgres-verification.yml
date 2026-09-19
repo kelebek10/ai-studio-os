@@ -2,6 +2,13 @@ name: COMM Bridge Runtime PostgreSQL Verification
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/comm-bridge-runtime-v1
+    paths:
+      - '.github/workflows/comm-bridge-runtime-postgres-verification.yml'
+      - 'migrations/nonprod/**'
+      - 'tests/bridge-runtime/postgres_integration/**'
 
 permissions:
   contents: read
