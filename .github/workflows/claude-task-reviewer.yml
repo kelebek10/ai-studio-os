@@ -1,0 +1,45 @@
+name: claude-task-reviewer
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: claude-task-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  claude:
+    if: >-
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '## CLAUDE COMMAND')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Run Claude in controlled read-only mode
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Read the complete issue conversation and execute the latest
+            "## CLAUDE COMMAND" task.
+
+            PAI-FORGE CONTROL RULES:
+            - This is reviewer/analysis mode only.
+            - Do not modify repository files.
+            - Do not create commits.
+            - Do not create branches.
+            - Do not create or merge pull requests.
+            - Do not run production migrations or infrastructure changes.
+            - Do not claim PASS without real evidence.
+            - If evidence is unavailable, explicitly report UNVERIFIED or BLOCKED.
+            - Return the requested COPY-PASTE RESULT directly in the issue.
+            - Respect the existing PAI-FORGE governance documents.
+          claude_args: |
+            --max-turns 8
+            --disallowedTools Edit,Write,NotebookEdit
