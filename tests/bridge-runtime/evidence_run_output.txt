@@ -1,0 +1,27 @@
+[PASS] TGA-01-algo: expected=True actual=True 
+[PASS] TGA-02-algo: expected=False actual=False 
+[PASS] TGA-05-algo: expected=False actual=False 
+[PASS] TGA-03-algo-match: expected=True actual=True 
+[PASS] TGA-03-algo-mismatch: expected=False actual=False 
+[PASS] TGA-04-algo-valid: expected=True actual=True 
+[PASS] TGA-04-algo-stale: expected=False actual=False 
+[PASS] TGA-06-algo: expected=(False, True) actual=(False, True) 
+[PASS] TGA-07-algo-missing-field: expected=True actual=True 
+[PASS] TGA-07-algo-valid-passes: expected=[] actual=[] 
+[PASS] TGA-08-algo-shape: expected=True actual=True shape-only; real DB-enforced immutability is BLOCKED (needs Postgres)
+[PASS] TGA-composed-accept: expected=True actual=True 
+[PASS] TGA-composed-reject-badsig: expected=False actual=False 
+[PASS] TGA-composed-reject-replay: expected=False actual=False 
+[PASS] TGA-audit-trail-length: expected=3 actual=3 
+[PASS] CAW-07-algo-match: expected=True actual=True 
+[PASS] CAW-07-algo-mismatch: expected=False actual=False 
+[PASS] CAW-08-algo-waiting: expected=WAITING actual=WAITING 
+[PASS] CAW-08-algo-timeout: expected=TIMEOUT actual=TIMEOUT 
+[PASS] CAW-08-algo-acked: expected=ACKNOWLEDGED actual=ACKNOWLEDGED 
+
+20/20 algorithm-level tests PASS
+
+REMINDER: these are algorithm-level results only. Every TGA-01..08 and
+CAW-01..10 CRITERION remains BLOCKED / CAPABILITY GAP per
+governance/TGA-CAW-ACCEPTANCE-CRITERIA-v1.0.md — no real endpoint,
+Bridge, Postgres, or Claude-dispatch mechanism exists in this environment.

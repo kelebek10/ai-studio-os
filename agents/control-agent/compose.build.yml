@@ -1,0 +1,6 @@
+services:
+  control-agent-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${CONTROL_AGENT_IMAGE:?CONTROL_AGENT_IMAGE is required}
