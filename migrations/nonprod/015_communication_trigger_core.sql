@@ -32,6 +32,10 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    IF TG_OP = 'INSERT' AND NEW.status <> 'VALIDATED' THEN
+        RAISE EXCEPTION 'INVALID_INITIAL_TASK_STATUS:%', NEW.status;
+    END IF;
+
     IF TG_OP = 'UPDATE' AND NEW.status <> OLD.status THEN
         IF NOT (
             (OLD.status = 'VALIDATED' AND NEW.status = 'ROUTING') OR
@@ -59,7 +63,7 @@ END;
 $$;
 
 CREATE TRIGGER task_transition_guard
-BEFORE UPDATE ON communication_core.task_execution
+BEFORE INSERT OR UPDATE ON communication_core.task_execution
 FOR EACH ROW
 EXECUTE FUNCTION communication_core.enforce_task_transition();
 
