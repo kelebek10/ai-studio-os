@@ -1,0 +1,26 @@
+name: comm-bridge-trigger
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  validate-task-trigger:
+    if: >-
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '## N8N-POSTGRES-ROLE-AUDIT-01')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Controlled trigger boundary
+        run: |
+          echo TASK_TRIGGER_DETECTED
+          echo issue=${{ github.event.issue.number }}
+          echo comment_id=${{ github.event.comment.id }}
+          echo actor=${{ github.actor }}
+          echo repo=${{ github.repository }}
+          echo ref=${{ github.ref }}
+          echo NOTE=Claude wake-up is not implemented by this workflow
