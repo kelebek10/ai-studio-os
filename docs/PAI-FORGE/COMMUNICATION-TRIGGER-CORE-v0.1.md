@@ -9,21 +9,41 @@ Establish the smallest reliable communication and triggering backbone required t
 
 This layer exists to serve PAI-FORGE product development. It is not a generic AI Operating System.
 
-## Communication policy
+## Communication policy — HARD RULE
 
-**Agent-to-agent and AI-to-AI free-form conversation is prohibited.**
+**All AI-to-AI and agent-to-agent communication is task-scoped only.**
 
-Agents communicate only through explicit task contracts, ACK/RESULT messages, evidence records, and controlled routing.
+Free-form conversation is prohibited, including:
+- AI ↔ AI free-form chat
+- agent ↔ agent free-form chat
+- specialist-agent ↔ specialist-agent free-form chat within the same AI
+- unrestricted or infinite conversation, including GPT-5.6
 
-The **3-round rule applies only to an active problem-solving/conflict cycle**. It does not authorize general conversation, social exchange, exploratory chat, or unrestricted agent-to-agent messaging.
+An AI or agent may communicate only as part of an explicitly assigned task and only through the defined task contract, controlled routing, ACK/RESULT messages, and evidence records.
 
-For a problem-solving cycle:
+**No communication channel may exist outside the assigned task scope.**
 
-- maximum 3 controlled rounds
-- each round must have a defined task/problem scope
-- each response must produce actionable evidence or a clear resolution state
-- unresolved after round 3 → BLOCKED / Human Gate
-- no automatic fourth round
+### Problem-solving exception — strictly bounded
+
+The **3-round rule exists only for an explicitly declared problem-solving/conflict-resolution cycle inside an assigned task.**
+
+It does not authorize:
+- general conversation
+- social exchange
+- exploratory chat
+- open-ended discussion
+- task-independent agent communication
+- automatic continuation after the problem-solving cycle
+
+For a declared problem-solving cycle:
+- maximum **3 controlled rounds**
+- each round must remain within the declared problem scope
+- each round must produce actionable evidence or a clear resolution state
+- unresolved after round 3 → **BLOCKED / Human Gate**
+- **no automatic fourth round**
+- after the cycle ends, communication returns to the normal task-contract flow
+
+This rule applies equally to integrated AIs and their internal specialist agents.
 
 ## Minimal flow
 
@@ -76,8 +96,11 @@ The first implementation must prove, with real evidence:
 8. Unauthorized target/action is rejected.
 9. Restart/replay does not create duplicate execution.
 10. The full round can be traced by task_id + correlation_id.
-11. Unsolicited free-form agent-to-agent messaging is rejected or unavailable.
+11. Any unsolicited or out-of-task AI/agent message is rejected or unavailable.
 12. The 3-round limit is enforced only inside an explicitly declared problem-solving cycle.
+13. No AI or agent can initiate or continue communication outside an assigned task scope.
+14. Internal specialist agents are subject to the same communication containment rules.
+15. A fourth problem-solving round is rejected/blocked.
 
 ## Explicitly deferred
 
@@ -108,6 +131,6 @@ Communication & Trigger Core is PASS only when a real end-to-end test demonstrat
 
 **task → trigger → agent → ACK → execution → result → evidence**
 
-with replay/idempotency, fail-closed behavior, communication containment, and problem-cycle round enforcement proven.
+with replay/idempotency, fail-closed behavior, **task-scoped communication containment**, and **problem-cycle-only 3-round enforcement** proven.
 
 Until then, no AI agent is considered integrated.
