@@ -87,10 +87,10 @@ def conflict_checks():
     base = raw_task("reviewer", "REVIEW", "m16.9", ("x",))
     lp = base.logical_problem_id
     for n in range(1, 4):
-        task, rec = cm.open_round(base.__class__(**{**base.__dict__, "conflict_round": n-1}), logical_problem_id=lp, agent="reviewer", model="qwen3:1.7b", scope="m16.9", actionable=True)
+        task, rec = cm.open_round(base, model="qwen3:1.7b", scope_match=True, actionable=True)
         assert rec.round_number == n
         print(f"PASS conflict round {n}")
-    task, rec = cm.open_round(task, logical_problem_id=lp, agent="reviewer", model="qwen3:1.7b", scope="m16.9", actionable=True)
+    task, rec = cm.open_round(base, model="qwen3:1.7b", scope_match=True, actionable=True)
     assert task.status is TaskState.BLOCKED and rec.status == "BLOCKED"
     print("PASS conflict round 4 BLOCKED")
 
