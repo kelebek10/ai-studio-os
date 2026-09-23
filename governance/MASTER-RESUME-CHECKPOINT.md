@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.5  
+**Version:** 1.6  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -78,8 +78,37 @@ Real device evidence:
 
 ModelAdapter was corrected so model execution is permitted from the active worker state `EXECUTING` as well as `ROUTING`. This matches the lifecycle ownership boundary: routing assigns; worker claims execution; adapter invokes the untrusted provider.
 
-Current verified branch HEAD:
+Historical M16.5 verification commit:
 `fd04faf11f8fd25ae62d60b938f4f01705eb480d`
+
+### M16.7 — VERIFIED
+
+Deterministic Evidence Worker is implemented and tested.
+
+Controls:
+- accepts only `evidence` role;
+- accepts only tasks in `REVIEW` state;
+- requires source task, producer, producer status, artifact and evidence references;
+- rejects `APPROVED` producer status;
+- computes deterministic SHA-256 artifact digest;
+- optionally verifies an expected artifact digest and fails closed on mismatch;
+- computes deterministic evidence digest from canonical provenance fields;
+- preserves task/correlation/scope/source-commit lineage;
+- produces evidence metadata only; it does not assert truth or authority;
+- has no LLM/network dependency.
+
+Real device evidence:
+- unit harness: `M16.7 UNIT HARNESS: PASS`
+- deterministic replay produced identical evidence digest: PASS
+- negative controls for role, state, approval status, digest mismatch and missing references: PASS
+- live Ollama/Qwen3 Reviewer output was passed into Evidence Worker: PASS
+- returned model: `qwen3:1.7b`
+- live artifact digest: `9d2354811afc7f925187f50ac21e3d4d6cdf9104f64294d6b503b889fdf8a0ea`
+- live evidence digest: `ae4a9be7b91ee5935ed46ed20536087702d3963fe297165828bf601af620965b`
+- `M16.7 LIVE QWEN3 EVIDENCE HARNESS: PASS`
+
+Current verified branch HEAD:
+`1799906fd052434ebff10bc8ad2fb8b613634376`
 
 ### M16.6 — VERIFIED
 
@@ -106,7 +135,7 @@ Real device evidence:
 - reviewer produced a concrete unsupported-claim and missing-evidence analysis
 - `M16.6 LIVE REVIEWER HARNESS: PASS`
 
-Current verified branch HEAD:
+Historical M16.6 verification commit:
 `6ca66ba284470ee71f6d5ee5c6c46de259ec8b1e`
 
 ### M16.4 — VERIFIED
@@ -128,7 +157,7 @@ Real device evidence:
 
 Note: an initial 30s timeout was insufficient for the live local model. This was observed as a real timeout, then corrected to 90s before final PASS.
 
-Current verified branch HEAD:
+Historical M16.4 verification commit:
 `9c2e78666db98d9458d9aa01e6896595582ac6c2`
 
 ## 9. SECURITY
@@ -155,21 +184,20 @@ Target:
 Qwen3 is a worker/model adapter, not authority.
 
 Completed:
-1. Task Contract runtime schema
-2. Orchestrator router
-3. Provider-neutral Model Adapter
-4. Live Qwen3 provider integration
+1. Task Contract runtime schema — VERIFIED
+2. Orchestrator router — VERIFIED
+3. Provider-neutral Model Adapter — VERIFIED
+4. Live Qwen3 provider integration — VERIFIED
 5. Researcher Worker — VERIFIED
 6. Reviewer Worker — VERIFIED
+7. Evidence Worker — VERIFIED
 
 Next:
-5. Researcher Worker — VERIFIED
-6. Reviewer Worker — VERIFIED
-7. Evidence Worker
-8. Human Gate
-9. Telegram E2E
-10. negative/security tests
-11. evidence package
+8. Human Gate / Security
+9. Conflict Manager
+10. Telegram E2E
+11. Negative/security tests
+12. Evidence package + checkpoint
 
 ## 12. RESUME
 1. State active model: GPT-5.6 Luna.
