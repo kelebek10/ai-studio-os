@@ -1,6 +1,6 @@
 # PAI-FORGE — M16.10 TELEGRAM GATEWAY CONTRACT v1.0
 
-**Status:** IMPLEMENTED / UNIT-TESTED — E2E NOT YET VERIFIED
+**Status:** IMPLEMENTED / UNIT-TESTED / E2E VERIFIED — M16.10
 
 ## Purpose
 
@@ -21,6 +21,16 @@ Telegram is an untrusted human-facing transport. The gateway converts an allowed
 
 Telegram → n8n Gateway → Security/Governance → GPT-5.6 Luna Orchestrator → Model Adapter → Worker → Review → Evidence → Human Gate/Security → n8n → Telegram.
 
-## Current boundary
+## E2E Verification — M16.10
 
-The gateway ingress contract is implemented and unit-tested. Full E2E remains blocked until the n8n workflow can invoke the registered PAI-FORGE orchestrator/runtime endpoint and return its controlled result without bypassing Security/Governance.
+Real n8n/Telegram evidence:
+- workflow: `PAI-FORGE - M16.10 Telegram Gateway E2E`
+- workflow ID: `PAIM1610GATE01`
+- activation: verified active
+- Telegram E2E execution: #33
+- execution status: `success`
+- Telegram response: `Operational acknowledgement received.`
+- legacy workflow `PAIOLLAMATEST01` was disabled before M16.10 activation.
+- `appendAttribution=false` remains enabled for the M16.10 Telegram response nodes.
+
+This verifies the controlled Telegram Gateway E2E boundary. The gateway remains transport-only and does not grant approval authority.
