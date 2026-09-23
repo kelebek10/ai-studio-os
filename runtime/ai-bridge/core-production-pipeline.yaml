@@ -1,0 +1,43 @@
+version: "1.0"
+name: PAI-FORGE-CORE-PRODUCTION
+orchestrator: PAIFORGE
+
+principles:
+  structured_first: true
+  evidence_required: true
+  direct_core_write_by_ai: false
+  human_pre_approval_required: true
+  model_agnostic: true
+  unresolved_conflict: BLOCKED_HUMAN_GATE
+  max_conflict_rounds: 3
+
+stages:
+  - MISSION
+  - ROUTING
+  - INDEPENDENT_RESEARCH
+  - EVIDENCE_NORMALIZATION
+  - CROSS_REVIEW
+  - SYNTHESIS
+  - QC
+  - READY_FOR_HUMAN_PRE_APPROVAL
+  - HUMAN_PRE_APPROVAL
+  - CORE_COMMIT
+
+roles:
+  ORCHESTRATOR:
+    model: GPT-5.6-Luna
+    may_not: [self_approve, direct_core_write, bypass_control]
+  SPECIALISTS:
+    may_not: [core_write]
+  REVIEWER:
+    independence_required: true
+  EVIDENCE:
+    may_not: [invent_source]
+  CONTROL:
+    may: [enforce_state, enforce_authorization, block_invalid_transition]
+  SUPERVISOR:
+    human: true
+    actions: [PRE_APPROVE, REJECT, REQUEST_REVIEW]
+
+quality_requirements:
+  mandatory: [schema_valid, provenance_complete, evidence_present, contradiction_checked, qc_pass, human_pre_approval_recorded]
