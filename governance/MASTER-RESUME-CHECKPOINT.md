@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.8  
+**Version:** 1.9  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -108,7 +108,7 @@ Real device evidence:
 - `M16.7 LIVE QWEN3 EVIDENCE HARNESS: PASS`
 
 Current verified branch HEAD:
-`5ff1e143e90ff6d4da844588c2a22d70ad62f594`
+`776ea0631c70ca30d794530c9c4ab13817f78fb5`
 
 ### M16.8 — VERIFIED
 
@@ -135,6 +135,34 @@ Real device evidence:
 
 Verification commit:
 `5ff1e143e90ff6d4da844588c2a22d70ad62f594`
+
+### M16.9 — VERIFIED
+
+Deterministic Conflict Manager is implemented and tested with durable non-production lineage storage.
+
+Controls:
+- conflict requires a `logical_problem_id`;
+- rounds 1–3 are allowed only when scope/actionability controls pass;
+- round 4 is deterministically `BLOCKED`;
+- changing task, agent or model cannot reset the same logical problem;
+- manager restart cannot reset the counter because lineage is persisted in the injected SQLite ledger;
+- missing lineage fails closed;
+- scope/actionability failure blocks and records the reason;
+- conflict records preserve logical problem, round, task, agent, model, status and reason;
+- manager has no authority to extend the three-round limit.
+
+Real device evidence:
+- `py_compile`: PASS
+- rounds 1–3: PASS
+- round 4: BLOCKED
+- process restart with same logical problem: BLOCKED
+- persisted records after restart: PASS
+- missing logical problem: BLOCKED
+- scope mismatch: BLOCKED
+- `M16.9 CONFLICT MANAGER HARNESS: PASS`
+
+Verification commit:
+`776ea0631c70ca30d794530c9c4ab13817f78fb5`
 
 ### M16.6 — VERIFIED
 
@@ -221,8 +249,6 @@ Completed:
 8. Human Gate / Security — VERIFIED
 
 Next:
-9. Conflict Manager
-9. Conflict Manager
 10. Telegram E2E
 11. Negative/security tests
 12. Evidence package + checkpoint
