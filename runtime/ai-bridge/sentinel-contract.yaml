@@ -1,0 +1,21 @@
+version: "1.0"
+request:
+  required: [mission_id, objective, domain, source_context]
+  forbidden: [provider_secret, credential, direct_core_write]
+
+assessment:
+  security: [PASS, WARN, REVIEW_REQUIRED, BLOCK]
+  intelligence: [PASS, WARN, REVIEW_REQUIRED, BLOCK]
+  redteam: [PASS, WARN, REVIEW_REQUIRED, BLOCK]
+
+required_checks:
+  - prompt_injection
+  - secret_exposure
+  - provenance
+  - source_conflict
+  - data_poisoning
+  - authorization_boundary
+
+output:
+  required: [mission_id, findings, evidence, decision, confidence, reviewer]
+  decision: [ALLOW, WARN, REVIEW_REQUIRED, BLOCK]
