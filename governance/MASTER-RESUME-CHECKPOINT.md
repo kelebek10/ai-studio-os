@@ -295,6 +295,7 @@ Security boundary:
 Final M16 verification commits:
 - M16.10 gateway contract E2E update: `7f28bdcb737c36685e6088c8c0208207cc65967c`
 - M16.11 security verification: `1ec2e0487ed01693299f3792605be6377823c43f`
+- M16 final evidence package: `8cb0b4ee5faae151a1f52bc41287bfd8cf1d35f4`
 
 Final n8n evidence:
 - workflow: `PAIM1610GATE01`
@@ -314,8 +315,10 @@ Acceptance:
 - evidence/checkpoint committed to GitHub;
 - no production migration or protected governance mutation performed as part of M16 closure.
 
-## 11. M16 DIRECTION
-Target:
+## 11. M17 NEXT CONTROLLED STAGE
+M16 is closed. M17 must begin by verifying this checkpoint, runtime health, branch/HEAD, and production-mutation restrictions.
+
+Historical M16 target:
 `Telegram → n8n Gateway → Security/Governance → GPT-5.6 Luna Orchestrator → AI Model Adapter → Worker → Specialist Agents → Review → Evidence → Orchestrator → Security/Gateway → n8n → Telegram`
 Qwen3 is a worker/model adapter, not authority.
 
