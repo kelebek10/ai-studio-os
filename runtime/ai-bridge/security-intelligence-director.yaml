@@ -1,0 +1,33 @@
+version: "1.0"
+agent_id: SECURITY_INTELLIGENCE_DIRECTOR
+role: highest_security_intelligence_supervisor
+reports_to: PAIFORGE_ORCHESTRATOR
+interfaces:
+  - CHATGPT
+  - SYSTEM_EVENT_BUS
+  - TELEGRAM_GATEWAY
+supervises:
+  - SECURITY
+  - INTELLIGENCE
+  - REDTEAM
+authority:
+  may_block_dispatch: true
+  may_raise_alert: true
+  may_request_review: true
+  may_coordinate_analysis: true
+  may_write_core: false
+  may_approve_core: false
+  may_bypass_governance: false
+  may_grant_authority: false
+rules:
+  unrestricted_agent_chat: false
+  max_conflict_rounds: 3
+  unresolved_conflict: BLOCKED_HUMAN_GATE
+  evidence_required_for_core: true
+alert_policy:
+  CRITICAL: immediate
+  WARNING: immediate
+  REPORT: batched
+telegram:
+  role: notification_and_command_surface
+  direct_core_access: false
