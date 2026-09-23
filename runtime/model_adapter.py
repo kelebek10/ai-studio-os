@@ -33,8 +33,8 @@ class ModelAdapter:
         self._model = model
 
     def execute(self, task: TaskEnvelope, prompt: str) -> ModelResponse:
-        if task.status is not TaskState.ROUTING:
-            raise ValueError("MODEL_EXECUTION_REQUIRES_ROUTED_TASK")
+        if task.status not in {TaskState.ROUTING, TaskState.EXECUTING}:
+            raise ValueError("MODEL_EXECUTION_REQUIRES_ROUTED_OR_EXECUTING_TASK")
         if not prompt or not prompt.strip():
             raise ValueError("EMPTY_MODEL_PROMPT")
         response = self._providers[self._model].generate(
