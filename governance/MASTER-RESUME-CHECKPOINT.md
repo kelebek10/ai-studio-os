@@ -1,7 +1,7 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.9  
-**Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
+**Version:** 2.0  
+**Status:** CONTROLLED / RESUME SOURCE OF TRUTH / M16 VERIFIED  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
 **Last updated:** 2026-09-23
@@ -275,6 +275,44 @@ Before continuing, read as applicable:
 - `governance/AI-WORKER-PROFILES.md`
 - `governance/AI-ROLE-MATRIX.md`
 - `governance/CHECKPOINT-2026-09-15-M15-AGENT-RUNTIME.md`
+
+## M16 FINAL STATUS
+
+**M16.1–M16.11: VERIFIED.**  
+**M16.12: VERIFIED — Evidence Package + final checkpoint completed.**
+
+Final M16 E2E:
+`Telegram → n8n M16.10 Gateway → Qwen3 worker → n8n → Telegram`
+
+Security boundary:
+- Telegram is untrusted transport.
+- `/approve` is blocked at ingress.
+- Human approval remains M14 authority.
+- Security/Human Gate blocks missing or spoofed approval evidence.
+- AI/worker output cannot create authority.
+- Conflict round 4 is deterministically blocked.
+
+Final M16 verification commits:
+- M16.10 gateway contract E2E update: `7f28bdcb737c36685e6088c8c0208207cc65967c`
+- M16.11 security verification: `1ec2e0487ed01693299f3792605be6377823c43f`
+
+Final n8n evidence:
+- workflow: `PAIM1610GATE01`
+- Telegram E2E execution: `#33`
+- status: `success`
+- response: `Operational acknowledgement received.`
+
+### M16.12 — VERIFIED
+
+Evidence Package:
+`governance/M16-FINAL-EVIDENCE-PACKAGE-v1.0.md`
+
+Acceptance:
+- all M16 stages verified;
+- M16.10 real Telegram E2E verified;
+- M16.11 real security regression runner verified;
+- evidence/checkpoint committed to GitHub;
+- no production migration or protected governance mutation performed as part of M16 closure.
 
 ## 11. M16 DIRECTION
 Target:
