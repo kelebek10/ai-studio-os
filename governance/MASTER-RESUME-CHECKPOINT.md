@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.6  
+**Version:** 1.7  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -108,7 +108,7 @@ Real device evidence:
 - `M16.7 LIVE QWEN3 EVIDENCE HARNESS: PASS`
 
 Current verified branch HEAD:
-`1799906fd052434ebff10bc8ad2fb8b613634376`
+`df5935f88d2563a725f4b159c826945109a8d397`
 
 ### M16.6 — VERIFIED
 
@@ -174,6 +174,7 @@ Before continuing, read as applicable:
 - `governance/AGENT-REGISTRY-v1.0.md`
 - `governance/TASK-CONTRACT-v1.0.md`
 - `governance/AI-RESULT-HANDOFF-VERIFICATION-GATE-v1.0.md`
+- `governance/EVIDENCE-WORKER-CONTRACT-v1.0.md`
 - `governance/AI-WORKER-PROFILES.md`
 - `governance/AI-ROLE-MATRIX.md`
 - `governance/CHECKPOINT-2026-09-15-M15-AGENT-RUNTIME.md`
