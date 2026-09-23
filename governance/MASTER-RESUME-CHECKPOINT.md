@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 2.0  
+**Version:** 2.1  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH / M16 VERIFIED  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -351,3 +351,42 @@ If state is missing, contradictory, stale or unverified:
 
 ## 14. CHANGE CONTROL
 Material changes require version update, explicit change description, Git commit and preserved evidence/history.
+
+
+## 15. 2026-09-23 M16 CLOSEOUT / TOMORROW RESUME NOTE
+
+### What was completed today
+M16 was completed and closed after real runtime verification.
+
+- M16.1–M16.9 were already verified and preserved.
+- M16.10 Telegram Gateway E2E was activated and tested on the real n8n/Telegram runtime.
+- Legacy `PAIOLLAMATEST01` was disabled before M16.10 activation and remains protected as rollback baseline.
+- M16.10 real Telegram execution **#33** completed with status **success** and returned `Operational acknowledgement received.`
+- M16.11 security regression coverage was completed with the dependency-free runner `tests/runtime/run_m16_11_security.py`.
+- M16.11 real runtime result: **`M16.11 SECURITY RUNNER: PASS`**.
+- Security negative controls verified fail-closed behavior for unauthorized chat, unknown commands, `/approve`, empty messages, worker role/state/evidence violations, approval assertions, Human Gate violations, and conflict round 4.
+- M16.12 final evidence package was created and committed.
+- Telegram Gateway contract was updated to record E2E verification.
+- This checkpoint was updated to declare M16 **VERIFIED / CLOSED**.
+
+### Canonical M16 artifacts
+- Final Evidence Package: `governance/M16-FINAL-EVIDENCE-PACKAGE-v1.0.md`
+- M16.10 E2E contract verification commit: `7f28bdcb737c36685e6088c8c0208207cc65967c`
+- M16.11 security verification commit: `1ec2e0487ed01693299f3792605be6377823c43f`
+- Evidence Package commit: `8cb0b4ee5faae151a1f52bc41287bfd8cf1d35f4`
+- Current checkpoint closeout commit: `292284d4923a109c39f65fd5ad3d707174029a2f`
+
+### Tomorrow's exact resume point
+**Do not reopen M16 unless new evidence shows regression.**
+
+Tomorrow begin with:
+1. Verify `phase-1-3-foundation` branch and remote HEAD.
+2. Read this checkpoint and `governance/M16-FINAL-EVIDENCE-PACKAGE-v1.0.md`.
+3. Verify n8n/runtime health without changing the protected M16 baseline.
+4. Confirm no stale local M16.9 modifications are being mistaken for source-of-truth.
+5. Start **M17 planning only after the above verification passes**.
+6. Do not perform production migration, protected governance mutation, or new AI-agent authority changes without a separate approved gate.
+
+**Resume marker:** `M16 CLOSED → M17 PRE-FLIGHT`
+
+**Human owner requested pause/resume at this point: continue tomorrow from M17 PRE-FLIGHT.**
