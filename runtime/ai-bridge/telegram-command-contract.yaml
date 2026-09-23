@@ -1,0 +1,34 @@
+version: "1.0"
+interface: TELEGRAM_COMMAND_GATEWAY
+transport: n8n
+trust: untrusted_external_input
+allowed_commands:
+  - /status
+  - /missions
+  - /report
+  - /alerts
+  - /ask
+  - /pause
+  - /resume
+  - /logs
+approval_commands:
+  - /approve
+approval_commands_require:
+  human_gate: true
+  identity_verification: true
+  explicit_confirmation: true
+forbidden:
+  - direct_core_write
+  - provider_secret
+  - credential_input
+  - governance_bypass
+  - agent_authority_grant
+  - unrestricted_agent_chat
+routing:
+  inbound: PAI-FORGE_COMMAND_GATEWAY
+  security_review: SECURITY_INTELLIGENCE_DIRECTOR
+  execution: PAIFORGE_ORCHESTRATOR
+  outbound: TELEGRAM
+audit:
+  required: true
+  include: [user, command, timestamp, result, mission_id]
