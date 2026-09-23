@@ -1,7 +1,7 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -126,7 +126,7 @@ Existing runtime foundation:
 - Redis
 - n8n
 
-M15 Task Contract lifecycle:
+M15/M16 runtime Task Contract lifecycle:
 `VALIDATED → ROUTING → EXECUTING → REVIEW → EVIDENCE → COMPLETED`
 
 Special states:
@@ -134,6 +134,34 @@ Special states:
 - `HUMAN_GATE`
 
 AI cannot output `APPROVED`.
+
+### M16.1 — VERIFIED
+
+The communication runtime TaskEnvelope now enforces:
+- deterministic lifecycle transitions;
+- explicit Human Gate declaration;
+- logical problem / parent task lineage fields;
+- three-round conflict hard stop;
+- rejection of `APPROVED`.
+
+Real device harness evidence:
+`M16.1 RUNTIME HARNESS: PASS`
+
+### M16.2 — VERIFIED
+
+The deterministic `OrchestratorRouter` now:
+- routes only `VALIDATED` tasks;
+- rejects unknown/unavailable targets;
+- rejects routing to `CORE`, `HUMAN`, or `SUPERVISOR`;
+- cannot route an already-routed task again.
+
+Real device harness evidence:
+`M16.2 ROUTER HARNESS: PASS`
+
+Current branch HEAD:
+`4636c259d913e10be6db70e10ef340b2be663a08`
+
+M16.2 is a **routing-boundary PASS**, not an end-to-end orchestration PASS.
 
 ## 9. SECURITY MODEL
 
@@ -168,17 +196,17 @@ Before continuing work, read as applicable:
 
 ## 11. CURRENT DEVELOPMENT DIRECTION — M16
 
-The next implementation target is the controlled orchestration layer, building on the existing runtime rather than rewriting it.
-
 Target chain:
 
 `Telegram → n8n Gateway → Security/Governance → GPT-5.6 Luna Orchestrator → AI Model Adapter → Worker → Specialist Agents → Review → Evidence → Orchestrator → Security/Gateway → n8n → Telegram`
 
 Qwen3 is a worker/model adapter, not the authority or decision center.
 
-Planned M16 increments:
+Completed:
 1. Task Contract runtime schema
 2. Orchestrator router
+
+Next:
 3. Model Adapter / Qwen3
 4. Researcher worker
 5. Reviewer worker
@@ -220,4 +248,3 @@ Material changes require:
 - explicit change description;
 - Git commit;
 - preservation of prior evidence/history.
-
