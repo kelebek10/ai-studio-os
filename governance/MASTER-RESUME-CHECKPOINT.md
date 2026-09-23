@@ -1,7 +1,7 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.1  
+**Version:** 1.2  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -158,10 +158,26 @@ The deterministic `OrchestratorRouter` now:
 Real device harness evidence:
 `M16.2 ROUTER HARNESS: PASS`
 
-Current branch HEAD:
-`4636c259d913e10be6db70e10ef340b2be663a08`
-
 M16.2 is a **routing-boundary PASS**, not an end-to-end orchestration PASS.
+
+### M16.3 — VERIFIED
+
+The provider-neutral `ModelAdapter` now:
+- accepts only `ROUTING` tasks;
+- requires a registered provider/model;
+- preserves task/correlation identity;
+- rejects empty prompts/responses;
+- rejects provider/model identity mismatch;
+- rejects model output asserting `APPROVED`;
+- treats provider output as untrusted data.
+
+Real device harness evidence:
+`M16.3 ADAPTER HARNESS: PASS`
+
+This is an **adapter-boundary PASS**, not live Qwen3 E2E proof.
+
+Current verified branch HEAD:
+`310acef7d60a2b7f41a598a529f841e5d35f8e66`
 
 ## 9. SECURITY MODEL
 
@@ -205,16 +221,17 @@ Qwen3 is a worker/model adapter, not the authority or decision center.
 Completed:
 1. Task Contract runtime schema
 2. Orchestrator router
+3. Provider-neutral Model Adapter boundary
 
 Next:
-3. Model Adapter / Qwen3
-4. Researcher worker
-5. Reviewer worker
-6. Evidence worker
-7. Human Gate
-8. Telegram E2E
-9. negative/security tests
-10. evidence package
+4. Live Qwen3 provider integration
+5. Researcher worker
+6. Reviewer worker
+7. Evidence worker
+8. Human Gate
+9. Telegram E2E
+10. negative/security tests
+11. evidence package
 
 Do not skip governance or evidence to accelerate implementation.
 
