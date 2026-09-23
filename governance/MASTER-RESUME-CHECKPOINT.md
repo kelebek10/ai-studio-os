@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.3  
+**Version:** 1.4  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -55,6 +55,32 @@ Provider-neutral ModelAdapter requires ROUTING, registered provider, identity pr
 Evidence: `M16.3 ADAPTER HARNESS: PASS`
 Boundary PASS only; not live Qwen3 E2E.
 
+### M16.5 — VERIFIED
+
+Bounded Researcher Worker is implemented and tested.
+
+Controls:
+- accepts only `researcher` role;
+- starts only from `ROUTING`;
+- requires declared evidence;
+- transitions task to `EXECUTING` before model execution;
+- uses the provider-neutral ModelAdapter;
+- preserves task/correlation/scope identity;
+- rejects authority output (`APPROVED`);
+- free-chat is prohibited by the task contract.
+
+Real device evidence:
+- unit harness: `M16.5 UNIT HARNESS: PASS`
+- live Ollama/Qwen3 Researcher call: PASS
+- returned model: `qwen3:1.7b`
+- returned marker: `PAI-FORGE M16.5 RESEARCHER LIVE PASS`
+- `M16.5 LIVE RESEARCHER HARNESS: PASS`
+
+ModelAdapter was corrected so model execution is permitted from the active worker state `EXECUTING` as well as `ROUTING`. This matches the lifecycle ownership boundary: routing assigns; worker claims execution; adapter invokes the untrusted provider.
+
+Current verified branch HEAD:
+`fd04faf11f8fd25ae62d60b938f4f01705eb480d`
+
 ### M16.4 — VERIFIED
 Live Ollama provider for `qwen3:1.7b` is implemented without modifying the protected Telegram workflow.
 Provider controls:
@@ -105,9 +131,10 @@ Completed:
 2. Orchestrator router
 3. Provider-neutral Model Adapter
 4. Live Qwen3 provider integration
+5. Researcher Worker — VERIFIED
 
 Next:
-5. Researcher Worker
+5. Researcher Worker — VERIFIED
 6. Reviewer Worker
 7. Evidence Worker
 8. Human Gate
