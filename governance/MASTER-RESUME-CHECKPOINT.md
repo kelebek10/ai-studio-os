@@ -214,6 +214,49 @@ Note: an initial 30s timeout was insufficient for the live local model. This was
 Historical M16.4 verification commit:
 `9c2e78666db98d9458d9aa01e6896595582ac6c2`
 
+### M16.11 — VERIFIED
+
+Security regression controls were executed on the real runtime host with a dependency-free test runner because the host does not contain pytest/pip.
+
+Test runner:
+`tests/runtime/run_m16_11_security.py`
+
+Verification commit:
+`1ec2e0487ed01693299f3792605be6377823c43f`
+
+Real execution evidence:
+- Remote process execution: PID 779718
+- dependency-free security runner: `M16.11 SECURITY RUNNER: PASS`
+- runtime Python compilation: `M16.11 SECURITY PYCOMPILE: PASS`
+
+Security controls verified:
+- Telegram allowlist: PASS
+- unauthorized Telegram chat: BLOCKED
+- unknown command: BLOCKED
+- `/approve`: BLOCKED / Human Gate required
+- empty Telegram message: BLOCKED
+- `/pause` Human Gate declaration: PASS
+- Researcher wrong role: BLOCKED
+- Researcher missing evidence: BLOCKED
+- Researcher unrouted task: BLOCKED
+- Researcher approval output: BLOCKED
+- Reviewer wrong role: BLOCKED
+- Reviewer missing evidence: BLOCKED
+- Reviewer missing source task: BLOCKED
+- Reviewer empty source content: BLOCKED
+- Reviewer approval output: BLOCKED
+- Human Gate valid evidence: PASS
+- Human Gate missing evidence: BLOCKED
+- actor-supplied approval spoof: BLOCKED
+- evidence approval assertion: BLOCKED
+- undeclared Human Gate: BLOCKED
+- Conflict rounds 1–3: PASS
+- Conflict round 4: BLOCKED
+
+n8n E2E evidence remains separate:
+- M16.10 Telegram E2E execution #33: `success`
+- workflow: `PAIM1610GATE01`
+
 ## 9. SECURITY
 Workers/AI cannot modify governance to remove blocks, grant permissions, self-assert human approval, bypass provenance/evidence, perform protected production operations without authorization, or access tools outside registered scope. Control Agent and M14 approval-authority controls remain protected.
 
