@@ -153,3 +153,105 @@ COMM-08: Unresolved Round 3 produces terminal handoff and stops substantive deba
 COMM-09: New cycles require verified materially new logical problems.
 
 COMM-10: Missing or contradictory communication state fails closed.
+
+
+## 14. ZERO-FREE-CHAT RULE — MANDATORY
+
+PAI-FORGE is a task network, not a free-conversation network.
+
+AI models, workers and specialist agents MUST NOT engage in free, social, exploratory or unrelated AI-to-AI conversation.
+
+Permitted communication is limited to:
+- task assignment;
+- task acknowledgement;
+- task-scoped execution/progress;
+- evidence/result handoff;
+- bounded clarification directly required by the assigned task;
+- conflict resolution for a concrete problem;
+- review/rework directly linked to the same task and problem lineage;
+- security/governance status reporting.
+
+If a message is not necessary to execute, verify, secure, document or hand off the active task, it is not permitted.
+
+The runtime MUST reject messages that lack a valid task context or that attempt to initiate an unbounded conversation.
+
+## 15. WORK-FOCUS ENFORCEMENT
+
+Every active AI/agent must remain focused on its assigned scope.
+
+An agent shall not:
+- initiate unrelated discussion;
+- request opinions without a task need;
+- continue discussion after a result has been handed off;
+- create an open-ended discussion thread;
+- use another task/channel/provider to continue a blocked discussion;
+- reset conflict rounds through conversational re-entry.
+
+Normal work follows:
+
+`ASSIGN → EXECUTE → VERIFY → HANDOFF`
+
+Only an actual unresolved problem opens:
+
+`CONFLICT → ROUND 1 → ROUND 2 → ROUND 3 → BLOCKED/HUMAN GATE`
+
+Security violations bypass the conflict loop and are blocked immediately.
+
+## 16. GLOBAL THREE-ROUND RULE
+
+The three-round hard stop applies across the entire PAI-FORGE AI/agent hierarchy, not only to GPT↔Claude communication.
+
+It covers:
+- AI model ↔ AI model;
+- worker ↔ worker;
+- specialist agent ↔ specialist agent;
+- reviewer ↔ implementer;
+- researcher ↔ evidence/reviewer;
+- team ↔ team;
+- orchestration-level substantive disputes.
+
+The round counter is attached to the `logical_problem_id` and cannot be reset by changing task ID, agent, model, workflow, channel, branch or conversation.
+
+## 17. SECURITY / GOVERNANCE OBSERVATION PATH
+
+The Security/Governance control boundary observes and enforces the communication policy across all layers, including the orchestrator.
+
+The security layer is not a subordinate conversational worker and does not participate in free discussion.
+
+Its communication with upper layers is limited to:
+- security status;
+- policy violations;
+- blocks;
+- risk findings;
+- required control actions;
+- verified clearance/status.
+
+The Human Project Owner remains the final authority.
+
+## 18. TELEGRAM HUMAN CONTROL CHANNEL
+
+Telegram is the human-facing operational channel.
+
+Canonical human path:
+
+`HUMAN PROJECT OWNER ↔ TELEGRAM ↔ SECURITY/GATEWAY ↔ GPT-5.6 LUNA ORCHESTRATOR`
+
+Telegram messages are not the durable source of truth. Task, decision, evidence, status and checkpoint records MUST be persisted in the controlled project repository/evidence system.
+
+Telegram may carry:
+- human commands;
+- status reports;
+- blocked/problem notifications;
+- human-gate requests;
+- verified completion summaries.
+
+Telegram MUST NOT be used to bypass governance, approval, provenance or task contracts.
+
+## 19. CONTROLLED RESUME REQUIREMENT
+
+A new chat/session MUST NOT be treated as a new project state.
+
+Before continuing work, the active AI coordinator must read the current controlled checkpoint and relevant governance documents from the repository, verify the current branch/commit/state, and resume from the recorded position.
+
+The latest checkpoint is authoritative for operational continuity; historical chat memory is not a substitute for the checkpoint.
+
