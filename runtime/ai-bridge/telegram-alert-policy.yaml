@@ -1,0 +1,32 @@
+version: "1.0"
+channel: TELEGRAM
+owner: SECURITY_INTELLIGENCE_DIRECTOR
+levels:
+  CRITICAL:
+    delivery: immediate
+    examples:
+      - secret_exposure
+      - unauthorized_core_access
+      - prompt_injection
+      - provenance_corruption
+      - data_poisoning
+      - critical_runtime_failure
+      - unresolved_conflict
+  WARNING:
+    delivery: immediate
+    examples:
+      - source_conflict
+      - provider_failure
+      - low_reliability
+      - abnormal_agent_behavior
+      - delayed_mission
+  REPORT:
+    delivery: batched
+    examples:
+      - mission_completed
+      - evidence_package_ready
+      - daily_summary
+security:
+  bot_token_in_repository: false
+  direct_core_access: false
+  allowed_chat_ids_only: true
