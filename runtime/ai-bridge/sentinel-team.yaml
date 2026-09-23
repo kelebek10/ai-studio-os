@@ -1,0 +1,37 @@
+version: "1.0"
+name: SENTINEL
+
+teams:
+  SECURITY:
+    specialists:
+      - threat-modeler
+      - prompt-injection-analyst
+      - secret-boundary-analyst
+      - supply-chain-analyst
+  INTELLIGENCE:
+    specialists:
+      - source-analyst
+      - provenance-analyst
+      - conflict-analyst
+      - research-planner
+  REDTEAM:
+    specialists:
+      - adversarial-reviewer
+      - boundary-tester
+      - false-confidence-tester
+
+gate:
+  modes: [ALLOW, WARN, REVIEW_REQUIRED, BLOCK]
+  critical_failure: BLOCKED_HUMAN_GATE
+  direct_core_write: false
+  approval_authority: false
+  independent_from_provider: true
+  unrestricted_agent_chat: false
+  max_conflict_rounds: 3
+
+pipeline:
+  - SECURITY_SCREEN
+  - INTELLIGENCE_REQUIREMENTS
+  - PROVIDER_DISPATCH
+  - SENTINEL_REVIEW
+  - EVIDENCE
