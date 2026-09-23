@@ -31,11 +31,11 @@ def expect(label, fn, exc, contains):
     raise AssertionError(f"FAIL {label}: expected {exc.__name__}")
 
 
-def raw_task(agent, task_type, scope, evidence=()):
+def raw_task(agent, task_type, scope, evidence=(), requires_human=False):
     return TaskEnvelope(
         uuid4(), uuid4(), agent, task_type, scope, SOURCE,
         tuple(evidence), ("free_chat", "self_approve"),
-        TaskState.VALIDATED, {}, (), 0, uuid4(), None, False,
+        TaskState.VALIDATED, {}, (), 0, uuid4(), None, requires_human,
     )
 
 
@@ -96,7 +96,7 @@ def conflict_checks():
 
 
 def human_gate_checks():
-    task = raw_task("evidence", "REVIEW-EVIDENCE", "m16.8", ("review-artifact",)).transition(TaskState.ROUTING).transition(TaskState.EXECUTING).transition(TaskState.REVIEW)
+    task = raw_task("evidence", "REVIEW-EVIDENCE", "m16.8", ("review-artifact",), requires_human=True).transition(TaskState.ROUTING).transition(TaskState.EXECUTING).transition(TaskState.REVIEW)
     task, record = EvidenceWorker().execute(task, source_task_id="review-1", producer="reviewer", producer_status="REVIEWED", artifact="security", evidence_refs=("runtime",))
     task = task.__class__(**{**task.__dict__, "evidence": (record.__dict__,)})
     gate = HumanGate(SecurityGate())
