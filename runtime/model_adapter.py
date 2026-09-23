@@ -1,8 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any, Mapping, Protocol
+from typing import Mapping, Protocol
 
-from ..communication.core import TaskEnvelope, TaskState
+from .communication.core import TaskEnvelope, TaskState
 
 @dataclass(frozen=True)
 class ModelRequest:
