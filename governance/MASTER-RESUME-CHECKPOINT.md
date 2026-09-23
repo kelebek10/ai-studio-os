@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.4  
+**Version:** 1.5  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -81,6 +81,34 @@ ModelAdapter was corrected so model execution is permitted from the active worke
 Current verified branch HEAD:
 `fd04faf11f8fd25ae62d60b938f4f01705eb480d`
 
+### M16.6 — VERIFIED
+
+Bounded independent Reviewer Worker is implemented and tested.
+
+Controls:
+- accepts only `reviewer` role;
+- starts only from `ROUTING`;
+- requires declared evidence;
+- requires a source task ID and non-empty research content;
+- transitions task to `EXECUTING`;
+- reviews supplied research through the provider-neutral ModelAdapter;
+- preserves source task identity;
+- rejects `APPROVED` as authority output;
+- prohibits free-chat/self-approval through the task contract.
+
+Real device evidence:
+- unit harness: `M16.6 UNIT HARNESS: PASS`
+- negative controls: role, evidence, source content, unrouted state and approval output all blocked
+- live Ollama/Qwen3 Reviewer call: PASS
+- returned model: `qwen3:1.7b`
+- source task: `m16.5-live-researcher`
+- returned marker: `PAI-FORGE M16.6 REVIEWER LIVE PASS`
+- reviewer produced a concrete unsupported-claim and missing-evidence analysis
+- `M16.6 LIVE REVIEWER HARNESS: PASS`
+
+Current verified branch HEAD:
+`6ca66ba284470ee71f6d5ee5c6c46de259ec8b1e`
+
 ### M16.4 — VERIFIED
 Live Ollama provider for `qwen3:1.7b` is implemented without modifying the protected Telegram workflow.
 Provider controls:
@@ -132,10 +160,11 @@ Completed:
 3. Provider-neutral Model Adapter
 4. Live Qwen3 provider integration
 5. Researcher Worker — VERIFIED
+6. Reviewer Worker — VERIFIED
 
 Next:
 5. Researcher Worker — VERIFIED
-6. Reviewer Worker
+6. Reviewer Worker — VERIFIED
 7. Evidence Worker
 8. Human Gate
 9. Telegram E2E
