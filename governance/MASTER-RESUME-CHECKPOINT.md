@@ -1,6 +1,6 @@
 # PAI-FORGE — MASTER RESUME CHECKPOINT
 **Document ID:** PAI-FORGE-RESUME-001  
-**Version:** 1.7  
+**Version:** 1.8  
 **Status:** CONTROLLED / RESUME SOURCE OF TRUTH  
 **Branch:** `phase-1-3-foundation`  
 **Owner:** Human Project Owner  
@@ -108,7 +108,33 @@ Real device evidence:
 - `M16.7 LIVE QWEN3 EVIDENCE HARNESS: PASS`
 
 Current verified branch HEAD:
-`df5935f88d2563a725f4b159c826945109a8d397`
+`5ff1e143e90ff6d4da844588c2a22d70ad62f594`
+
+### M16.8 — VERIFIED
+
+Human Gate + independent Security boundary are implemented and tested in the non-production runtime.
+
+Controls:
+- Security accepts only `EVIDENCE` state;
+- `requires_human=True` is mandatory for the Human Gate;
+- evidence record is mandatory;
+- actor-supplied `approval` / `approved_by` is rejected;
+- evidence with producer status `APPROVED` is rejected;
+- Human Gate creates a human-action request only; it has no approve operation;
+- `APPROVED` is not a runtime `TaskState`;
+- M14 remains the authoritative approval boundary for protected governance mutation.
+
+Real device evidence:
+- `py_compile`: PASS
+- valid evidence → Security → Human Gate: PASS
+- missing evidence: BLOCKED
+- actor approval spoof: BLOCKED
+- evidence approval assertion: BLOCKED
+- undeclared human gate: BLOCKED
+- `M16.8 HUMAN GATE SECURITY HARNESS: PASS`
+
+Verification commit:
+`5ff1e143e90ff6d4da844588c2a22d70ad62f594`
 
 ### M16.6 — VERIFIED
 
@@ -192,9 +218,10 @@ Completed:
 5. Researcher Worker — VERIFIED
 6. Reviewer Worker — VERIFIED
 7. Evidence Worker — VERIFIED
+8. Human Gate / Security — VERIFIED
 
 Next:
-8. Human Gate / Security
+9. Conflict Manager
 9. Conflict Manager
 10. Telegram E2E
 11. Negative/security tests
