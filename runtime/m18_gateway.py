@@ -39,10 +39,22 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, {"error":"NOT_FOUND"})
         try:
             raw = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+            if len(raw) > 8192:
+                return self._send(413, {"error":"REQUEST_TOO_LARGE"})
             payload = json.loads(raw or b"{}")
-            requires_human = bool(payload.get("requires_human", True))
+            if not isinstance(payload, dict):
+                return self._send(400, {"error":"INVALID_JSON_OBJECT"})
+            allowed = {"prompt", "requires_human"}
+            if set(payload) - allowed:
+                return self._send(403, {"error":"CONTROL_FIELD_FORBIDDEN"})
+            if "requires_human" in payload and not isinstance(payload["requires_human"], bool):
+                return self._send(400, {"error":"INVALID_REQUIRES_HUMAN"})
+            prompt = str(payload.get("prompt", "M18 isolated smoke"))
+            if not prompt or len(prompt) > 2000:
+                return self._send(400, {"error":"INVALID_PROMPT"})
+            requires_human = payload.get("requires_human", True)
             task = TaskEnvelope.new(agent=specialist.agent_id, task_type="SMOKE_RESEARCH", scope="TASK_SCOPED", source_commit="m18-live-qwen-smoke", required_evidence=["model_response", "review", "provenance"], prohibited_actions=["APPROVE", "PROVISION"], requires_human=requires_human)
-            result = pipeline.run(task, Provider.QWEN, str(payload.get("prompt", "M18 isolated smoke")))
+            result = pipeline.run(task, Provider.QWEN, prompt)
             return self._send(200, {"status":result.status.value, "review":result.review.verdict, "evidence_digest":result.evidence.evidence_digest, "human_gate": result.human_gate is not None})
         except Exception as exc:
             return self._send(403, {"error":type(exc).__name__, "reason":str(exc)})
