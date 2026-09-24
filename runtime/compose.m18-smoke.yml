@@ -1,0 +1,17 @@
+services:
+  m18-runtime-gateway-smoke:
+    build:
+      context: ..
+      dockerfile: runtime/Dockerfile.m18
+    container_name: m18-runtime-gateway-smoke
+    ports:
+      - "18091:8091"
+    networks:
+      - m18_smoke
+      - ollama_default
+    restart: "no"
+networks:
+  m18_smoke:
+    name: m18_smoke
+  ollama_default:
+    external: true
