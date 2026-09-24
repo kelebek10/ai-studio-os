@@ -4,12 +4,15 @@
 Coordinator: GPT-5.6 Luna.
 Repository: `kelebek10/ai-studio-os`.
 Branch: `phase-1-3-foundation`.
+Verified GitHub branch HEAD before handoff: `41aec300572f98b7ff2fc28c5bf383ff9906a019`.
 
 ## Hard state
 - M16 CLOSED. Do not reopen.
 - M17 CLOSED. Do not reopen unless explicit defect/change request.
 - M18 OPEN.
 - Current section: M18.5 — real production E2E + delegation/security/rollback validation.
+- M18.5 transition gate is VERIFIED READY.
+- M18.5 tests have NOT been completed yet.
 - M18.6 has NOT started and must not be declared ready yet.
 
 ## M18 Core Agent / Security Intelligence
@@ -47,10 +50,11 @@ Authority rules remain:
 - Runtime audit forgery denied.
 - AI provider INSERT denied.
 - `approve=true` HTTP field returns `403 CONTROL_FIELD_FORBIDDEN`.
-- M18 gateway health is currently stable.
+- M18 gateway health is stable at latest verification.
 - 30 consecutive local `/health` checks: PASS.
-- M18 gateway restart count: 0 at last verification.
-- M17 runtime gateway: RUNNING, restart count 0 at last verification.
+- M18 gateway restart count: 0 at latest verification.
+- M17 runtime gateway: RUNNING, restart count 0 at latest verification.
+- GitHub remote branch HEAD independently verified as `41aec300...`.
 
 ## Real production delegation evidence
 A real M18 production task completed:
@@ -62,7 +66,7 @@ A real M18 production task completed:
 - correlation ID: `a2d467b4-9d75-40b6-a558-74bbf0921a63`
 
 Earlier controlled delegation attempts were started, but the requested 10/10 consecutive delegation criterion has NOT been achieved and must NOT be reported as PASS.
-A long-running batch was aborted because it interacted poorly with the gateway health timing. The methodology was changed to independent single-task tests.
+A long-running batch was aborted because it interacted poorly with gateway health timing. Methodology was changed to independent single-task tests.
 
 ## Latest stability finding
 A transient connection-refused event occurred during an independent test. Investigation showed the gateway subsequently remained healthy.
@@ -73,13 +77,17 @@ Verified after the event:
 - Forbidden control field test PASS.
 The transient event must remain documented; do not erase it from QA history.
 
-## Next exact work
-1. Continue M18.5 with independent single-task delegation tests.
+## M18.5 starting point for next session
+The GitHub/branch reconciliation gate is complete.
+The next session MUST start directly with controlled M18.5 validation; do not repeat M16/M17 work or reopen prior milestones.
+
+### Exact next sequence
+1. Independent single-task production delegation tests.
 2. Record each real PASS; target 10/10 consecutive successful delegations.
-3. After delegation criterion is met, test recovery.
-4. Test conflict limit and fail-closed behavior.
-5. Test rollback by removing only M18 and verifying M17 remains healthy.
-6. Run M17 regression without modifying/reopening M17.
+3. Recovery test.
+4. Conflict limit and fail-closed behavior test.
+5. Rollback test by removing only M18 and verifying M17 remains healthy.
+6. M17 regression check without modifying/reopening M17.
 7. Only with real evidence, close M18.5.
 8. Then begin M18.6 final audit / delegation readiness.
 
@@ -91,6 +99,7 @@ The transient event must remain documented; do not erase it from QA history.
 - Do not weaken Human Gate.
 - Do not store production secrets in GitHub.
 - Do not report PASS without real runtime evidence.
+- Do not use migration 014 in production.
 
 ## Session style
 Use: DURUM → KARAR → SONRAKİ ADIM.
