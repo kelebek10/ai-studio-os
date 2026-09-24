@@ -43,3 +43,27 @@ No audit PASS is recorded without fresh runtime evidence. M18.6 does not reopen 
 
 ## Next Controlled Action
 Run the read-only M18.6 final audit checks against the restored known-good production identity.
+
+## Authority Boundary Result — 2026-09-24
+
+**PASS — PROVISIONING BOUNDARY VERIFIED**
+
+- Production DB runtime principal: `paiforge_m18_runtime`.
+- Runtime principal is non-superuser, cannot create roles, cannot create databases, and does not bypass RLS.
+- Runtime principal is intentionally a member of `paiforge_m18_orchestrator`; this is the controlled orchestration authority for specialist creation.
+- Current runtime principal is not a member of `paiforge_m18_ai_provider` and not a member of `paiforge_m18_human_approver`.
+- Registry RLS policies expose INSERT only to `paiforge_m18_orchestrator` for bounded SPECIALIST rows and to `paiforge_m18_human_approver` for CORE rows requiring a non-empty approval_id.
+- Provider role has SELECT only; no INSERT policy exists for `paiforge_m18_ai_provider`.
+- HTTP production gateway exposes no agent-creation/provisioning endpoint; `/governance` reports `agent_creation=no_http_authority`.
+- Runtime `/task` accepts only `prompt` and `requires_human`; control fields are rejected.
+- Model boundary rejects model output `APPROVED` with `MODEL_CANNOT_ASSERT_APPROVAL`.
+
+### Architectural interpretation
+
+Specialist provisioning is intentionally an **orchestrator capability**, not an AI-provider capability and not an HTTP caller capability. Core-agent creation remains human-approval-bound. This is consistent with the M18 authority model and is not a newly discovered governance defect.
+
+## M18.6 Gate Status
+
+All currently defined read-only entry checks are verified. No production mutation is required by this audit checkpoint.
+
+**M18.6 remains OPEN pending final evidence aggregation and closeout commit.**
