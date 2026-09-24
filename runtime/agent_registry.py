@@ -94,6 +94,9 @@ class AgentRegistry:
             return "BLOCKED:INVALID_CORE_AGENT_REQUEST"
         return f"HUMAN_GATE:CREATE_CORE_AGENT:{name}:{scope}"
 
+    def get(self, agent_id: str) -> AgentDefinition | None:
+        return self._agents.get(agent_id)
+
     def all(self) -> tuple[AgentDefinition, ...]:
         return tuple(self._agents.values())
 
