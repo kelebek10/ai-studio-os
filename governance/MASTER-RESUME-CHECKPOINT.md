@@ -390,3 +390,39 @@ Tomorrow begin with:
 **Resume marker:** `M16 CLOSED → M17 PRE-FLIGHT`
 
 **Human owner requested pause/resume at this point: continue tomorrow from M17 PRE-FLIGHT.**
+
+
+## 16. M16 FINAL CLOSE — DO NOT REOPEN
+
+**Status:** M16 = VERIFIED / CLOSED / ARCHIVED
+**Resume marker:** `M16 CLOSED -> M17 PRE-FLIGHT`
+**Date:** 2026-09-24
+
+M16 is permanently closed as the completed baseline for the next controlled stage. M17 must start from the verified M16 baseline and must not reopen, redesign, or re-execute M16 unless a future, independently verified regression is discovered.
+
+### M16 closure evidence
+- M16.1-M16.12: VERIFIED.
+- M16.10: real Telegram Gateway E2E evidence recorded; n8n execution #33 succeeded and returned `Operational acknowledgement received.`.
+- M16.11: dependency-free security runner completed with PASS; negative/security controls were exercised with real execution evidence.
+- Final Evidence Package: `governance/M16-FINAL-EVIDENCE-PACKAGE-v1.0.md`.
+- Final M16 closeout/checkpoint commit recorded previously: `1a227ede9b1670d0e0fee0907a89a6e697122a34`.
+
+### M16 boundary
+- No production migration was performed for M16 closure.
+- No protected governance mutation or new AI authority was introduced.
+- Telegram remains a transport/interface, not the durable source of truth.
+- Human Project Owner remains final authority.
+- Security/Governance remains an independent enforcement boundary.
+- GPT-5.6 Luna remains Project Director / Chief Architect / Orchestrator without human approval authority.
+- Qwen3 and other AI models remain untrusted worker/model layers.
+
+### M17 start rule
+The next session must:
+1. Read this checkpoint and the final M16 Evidence Package.
+2. Verify branch and remote HEAD before any change.
+3. Treat the M16 baseline as immutable for M17 planning.
+4. Perform M17 pre-flight before implementation.
+5. Do not perform production migration, protected governance mutation, or authority changes without a separate approved gate.
+6. Record the M17 scope, acceptance criteria, risks and first controlled task in GitHub before implementation.
+
+**Explicit instruction for the next chat:** Start at **M17 PRE-FLIGHT**. Do not return to M16 as a work stage. If a genuine M16 regression is suspected, stop and produce evidence first; do not silently reopen M16.
