@@ -34,6 +34,20 @@ class PersistentAgentRegistry:
             provider=r[4], parent_agent_id=r[5], status=AgentStatus(r[6]), approval_id=r[7]
         ) for r in cur.fetchall())
 
+
+    def get(self, agent_id: str) -> AgentDefinition | None:
+        cur = self.connection.execute(
+            "SELECT agent_id,name,tier,scope,provider,parent_agent_id,status,approval_id "
+            "FROM m18_agent_registry.agent WHERE agent_id=%s", (agent_id,)
+        )
+        r = cur.fetchone()
+        if r is None:
+            return None
+        return AgentDefinition(
+            agent_id=r[0], name=r[1], tier=AgentTier(r[2]), scope=r[3],
+            provider=r[4], parent_agent_id=r[5], status=AgentStatus(r[6]), approval_id=r[7]
+        )
+
     def request_core_addition(self, name: str, scope: str) -> str:
         if not name or not scope:
             return 'BLOCKED:INVALID_CORE_AGENT_REQUEST'

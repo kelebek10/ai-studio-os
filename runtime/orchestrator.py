@@ -20,6 +20,7 @@ class Orchestrator:
     """Central authority for task assignment; providers remain untrusted executors."""
 
     def __init__(self, registry: AgentRegistry | None = None) -> None:
+        # Registry may be in-memory (tests) or PersistentAgentRegistry (runtime).
         self.registry = registry or AgentRegistry()
 
     def assign_provider(self, task: TaskEnvelope, provider: Provider, authority: Authority = Authority.EXECUTE) -> ProviderAssignment:
