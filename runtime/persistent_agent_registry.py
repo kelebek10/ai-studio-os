@@ -58,6 +58,11 @@ class PersistentAgentRegistry:
             return 'BLOCKED:CORE_AGENT_LIMIT_REACHED'
         return f'HUMAN_GATE:CREATE_CORE_AGENT:{name}:{scope}'
 
+    def create_specialist(self, *, name: str, provider: str, scope: str, parent_agent_id: str, created_by: str) -> str:
+        if created_by != "ORCHESTRATOR":
+            raise PermissionError("SPECIALIST_CREATION_REQUIRES_ORCHESTRATOR")
+        return self.provision_specialist(name, provider, scope, parent_agent_id)
+
     def provision_specialist(self, name: str, provider: str, scope: str, parent_agent_id: str) -> str:
         agent_id = f"specialist:{provider.lower()}:{name.lower().replace(' ', '-')}"
         self.connection.execute(
