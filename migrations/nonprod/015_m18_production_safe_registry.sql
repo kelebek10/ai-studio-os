@@ -43,7 +43,7 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION m18_agent_registry.enforce_limits()
-RETURNS trigger LANGUAGE plpgsql AS $$
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = m18_agent_registry, pg_catalog AS $$
 DECLARE v_core integer; v_specialists integer; v_provider integer; v_parent_tier text;
 BEGIN
   IF NEW.tier='CORE' THEN
@@ -62,10 +62,10 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION m18_agent_registry.audit_agent_insert()
-RETURNS trigger LANGUAGE plpgsql AS $$
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = m18_agent_registry, pg_catalog AS $$
 BEGIN
   INSERT INTO m18_agent_registry.audit_event(agent_id,event_type,actor_principal,approval_id)
-  VALUES (NEW.agent_id, CASE WHEN NEW.tier='CORE' THEN 'CORE_CREATED' ELSE 'SPECIALIST_CREATED' END, current_user, NEW.approval_id);
+  VALUES (NEW.agent_id, CASE WHEN NEW.tier='CORE' THEN 'CORE_CREATED' ELSE 'SPECIALIST_CREATED' END, session_user, NEW.approval_id);
   RETURN NEW;
 END;
 $$;
@@ -94,6 +94,8 @@ DROP POLICY IF EXISTS audit_read_human ON m18_agent_registry.audit_event;
 CREATE POLICY audit_read_human ON m18_agent_registry.audit_event FOR SELECT TO paiforge_m18_human_approver USING (true);
 
 REVOKE ALL ON SCHEMA m18_agent_registry FROM PUBLIC;
+REVOKE ALL ON FUNCTION m18_agent_registry.enforce_limits() FROM PUBLIC;
+REVOKE ALL ON FUNCTION m18_agent_registry.audit_agent_insert() FROM PUBLIC;
 GRANT USAGE ON SCHEMA m18_agent_registry TO paiforge_m18_orchestrator,paiforge_m18_human_approver,paiforge_m18_ai_provider;
 GRANT SELECT,INSERT ON m18_agent_registry.agent TO paiforge_m18_orchestrator,paiforge_m18_human_approver;
 GRANT SELECT ON m18_agent_registry.agent TO paiforge_m18_ai_provider;
