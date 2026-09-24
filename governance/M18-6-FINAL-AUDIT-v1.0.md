@@ -1,6 +1,6 @@
 # M18.6 Final Audit v1.0
 
-**Status:** OPEN — CONTROLLED AUDIT START
+**Status:** CLOSED / VERIFIED
 **Date:** 2026-09-24
 **Branch:** `phase-1-3-foundation`
 **Baseline commit:** `c26f0796e79b1fc3a01b6b16465c3701d5cdca23`
@@ -64,6 +64,27 @@ Specialist provisioning is intentionally an **orchestrator capability**, not an 
 
 ## M18.6 Gate Status
 
-All currently defined read-only entry checks are verified. No production mutation is required by this audit checkpoint.
+All defined read-only audit controls are verified. No production mutation was required by the final audit.
 
-**M18.6 remains OPEN pending final evidence aggregation and closeout commit.**
+### Final Closure Evidence
+
+- M18.5 10/10 delegation sequence: VERIFIED.
+- HUMAN_GATE / REVIEWED / evidence / correlation: VERIFIED.
+- Model `APPROVED` escape rejection: VERIFIED.
+- Artifact digest mismatch rejection: VERIFIED.
+- Independent recovery: VERIFIED.
+- Controlled rollback to a distinct candidate: VERIFIED.
+- Exact restoration to the Known-Good image digest/source: VERIFIED.
+- Post-rollback M17 regression: VERIFIED — HTTP 200 / COMPLETED / REVIEWED / VERIFIED; correlation `0948c7bb-6f9b-4e35-b57a-534fdf994343`.
+- M18 restored identity: digest `sha256:9456ac1192c44642f1e4725255720660fb58b4d268ba41f19b3e5a4cd873f12c`, source `f517c44`, healthy, restart count `0`.
+- M17 remained running with restart count `0` and was not modified.
+
+### Closure Rule
+
+No unresolved P0/P1 authority or deployment-integrity gap remains in the audited production boundary. M16 and M17 are not reopened.
+
+**M18.6 = CLOSED / VERIFIED.**
+
+## Next Stage
+
+M18 production governance/runtime audit is complete. Any new capability must begin as a separately scoped controlled milestone; existing M18/M18.5/M18.6 gates must not be reopened without a concrete regression trigger.
