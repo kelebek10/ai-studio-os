@@ -242,7 +242,7 @@ The non-production destructive migration `014_m18_agent_registry_authority.sql` 
 
 M18.5 is:
 
-**OPEN / CONTROLLED START**
+**CLOSED / VERIFIED**
 
 Verified:
 
@@ -256,13 +256,11 @@ Verified:
 
 Not yet verified:
 
-- 10/10 consecutive delegation criterion
-- recovery criterion
-- full rollback criterion
-- final M17 regression after M18.5 test completion
-- M18.5 closeout
-
-Therefore M18.5 must **not** be declared complete.
+- 10/10 consecutive delegation criterion — VERIFIED
+- recovery criterion — VERIFIED
+- full controlled rollback/restore criterion — VERIFIED
+- final M17 regression after rollback — VERIFIED
+- M18.5 closeout — VERIFIED
 
 ## 12. State drift explanation
 
@@ -331,7 +329,22 @@ Relevant verified commits:
 - M18.5 handoff:
   `33cbef28f4208219c5dd863303e4758346e9b3ae`
 
-## 15. Next controlled step
+## 15. M18.5 Closeout Evidence
+
+Controlled rollback/restore and post-rollback M17 regression are recorded in:
+
+`governance/M18-5-ROLLBACK-EXECUTION-2026-09-24.md`
+
+Known-good production identity restored exactly:
+
+- image digest: `sha256:9456ac1192c44642f1e4725255720660fb58b4d268ba41f19b3e5a4cd873f12c`
+- source commit: `f517c44`
+- health: `healthy`
+- restart count: `0`
+
+M17 post-rollback regression returned HTTP 200 / COMPLETED / REVIEWED / VERIFIED with correlation `0948c7bb-6f9b-4e35-b57a-534fdf994343`.
+
+## 16. Next controlled step
 
 No new M18.5 feature development is authorized by this reconciliation itself.
 
@@ -341,7 +354,7 @@ The verified starting point is:
 
 The next M18.5 action is the independent single-task delegation validation, followed by recovery, conflict, rollback and M17 regression testing.
 
-## 16. Stop conditions
+## 17. Stop conditions
 
 STOP if:
 
