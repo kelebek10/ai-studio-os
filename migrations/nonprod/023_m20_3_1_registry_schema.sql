@@ -46,7 +46,8 @@ CREATE TABLE m19_control.agent (
   ),
   CONSTRAINT agent_enabled_status_ck CHECK (
     enabled = false OR status = 'ACTIVE'
-  )
+  ),
+  CONSTRAINT agent_identity_environment_uq UNIQUE (agent_id, environment)
 );
 
 ALTER TABLE m19_control.agent
@@ -73,8 +74,8 @@ CREATE TABLE m19_control.agent_capability (
   updated_at timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT agent_capability_agent_fk
-    FOREIGN KEY (agent_id)
-    REFERENCES m19_control.agent(agent_id)
+    FOREIGN KEY (agent_id, environment)
+    REFERENCES m19_control.agent(agent_id, environment)
     ON DELETE RESTRICT,
   CONSTRAINT agent_capability_name_ck CHECK (btrim(capability) <> ''),
   CONSTRAINT agent_capability_scope_ck CHECK (btrim(scope) <> ''),
@@ -82,14 +83,7 @@ CREATE TABLE m19_control.agent_capability (
   CONSTRAINT agent_capability_allowed_array_ck CHECK (jsonb_typeof(allowed_actions) = 'array'),
   CONSTRAINT agent_capability_prohibited_array_ck CHECK (jsonb_typeof(prohibited_actions) = 'array'),
   CONSTRAINT agent_capability_conflict_rounds_ck CHECK (max_conflict_rounds BETWEEN 0 AND 3),
-  CONSTRAINT agent_capability_source_commit_ck CHECK (btrim(source_commit) <> ''),
-  CONSTRAINT agent_capability_environment_consistency_ck CHECK (
-    environment = (
-      SELECT a.environment
-      FROM m19_control.agent a
-      WHERE a.agent_id = agent_id
-    )
-  )
+  CONSTRAINT agent_capability_source_commit_ck CHECK (btrim(source_commit) <> '')
 );
 
 -- A capability is unique for one agent within one execution scope/environment.
