@@ -21,12 +21,11 @@ END $$;
 
 -- Positive fixtures.
 INSERT INTO m19_control.agent
-(agent_id,agent_type,provider,name,role,status,authority_level,environment,model_ref,source_commit,enabled)
+(agent_id,agent_type,provider,name,role,status,authority_level,environment,model_ref,source_commit,enabled,parent_agent_id)
 VALUES
-('test:core:m20_3_1','CORE','internal','M20.3.1 Core','orchestrator','ACTIVE','COORDINATION','NONPROD','test-model','TEST-COMMIT-001',true),
-('test:provider:m20_3_1','PROVIDER','test-provider','M20.3.1 Provider','provider','ACTIVE','EXECUTION','NONPROD','test-model','TEST-COMMIT-001',true),
-('test:specialist:m20_3_1','SPECIALIST','test-provider','M20.3.1 Specialist','specialist','ACTIVE','NONE','NONPROD','test-model','TEST-COMMIT-001',true,
-  'test:provider:m20_3_1');
+('test:core:m20_3_1','CORE','internal','M20.3.1 Core','orchestrator','ACTIVE','COORDINATION','NONPROD','test-model','TEST-COMMIT-001',true,NULL),
+('test:provider:m20_3_1','PROVIDER','test-provider','M20.3.1 Provider','provider','ACTIVE','EXECUTION','NONPROD','test-model','TEST-COMMIT-001',true,NULL),
+('test:specialist:m20_3_1','SPECIALIST','test-provider','M20.3.1 Specialist','specialist','ACTIVE','NONE','NONPROD','test-model','TEST-COMMIT-001',true,'test:provider:m20_3_1');
 
 INSERT INTO m19_control.agent_capability
 (agent_id,capability,scope,allowed_actions,prohibited_actions,environment,requires_review,requires_human,max_conflict_rounds,enabled,source_commit)
