@@ -1,0 +1,19 @@
+{
+  "exists": true,
+  "format": "WEBP",
+  "mime": "image/webp",
+  "width": 1024,
+  "height": 768,
+  "layout_digest": "LAYOUT-DEMO-001",
+  "lighting_digest": "LIGHT-DEMO-001",
+  "expected_layout_digest": "LAYOUT-DEMO-001",
+  "expected_lighting_digest": "LIGHT-DEMO-001",
+  "scene_id": "SCENE-DAY",
+  "expected_scene_id": "SCENE-DAY",
+  "sha256": "bcd713ced2e3e095f99eba089e7890ca33efc6290a36f58eb5ce7e5c21262cdf",
+  "render_id": "M21-19-DEMO-001",
+  "project_id": "P-DEMO-001",
+  "provider": "mock",
+  "provider_contract_version": "M21.18",
+  "output_format": "WEBP"
+}
